@@ -1,3 +1,4 @@
+
 <x-app-layout>
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,10 +13,12 @@
                     data-bs-target="#sidebarMobile" aria-controls="sidebarMobile">
                     <i class="bi bi-list" style="font-size: 1.6rem;"></i>
                 </button>
-                <span class="navbar-brand fw-bold text-dark mb-0">Sistema de Gestión</span>
+                <span class="navbar-brand fw-bold text-dark mb-0">Sistema de Gestión   </span>
             </div>
         </nav>
 
+
+        
         <div class="d-flex flex-grow-1" style="min-height: calc(100vh - 56px);">
             <!-- Sidebar fijo (visible solo en escritorio) -->
             <aside class="d-none d-lg-flex flex-column text-dark shadow-sm"
@@ -117,6 +120,9 @@
             <main class="flex-grow-1 p-4" style="background-color: #f8d3b5;">
                 <div class="container-fluid">
                     <div class="row g-4">
+
+                           <h2 class="text-center text-success fw-bold mb-4">Módulo  del   Administrador</h2>
+                            <div class="alert alert-info text-center">Bienvenido, {{ Auth::user()->name }}</div>
                         <div class="col-md-4">
                             <div class="card text-center shadow border-0 rounded-4 h-100">
                                 <div class="card-body">
@@ -127,7 +133,8 @@
                                 </div>
                             </div>
                         </div>
-
+   
+                        
                         <div class="col-md-4">
                             <div class="card text-center shadow border-0 rounded-4 h-100">
                                 <div class="card-body">
