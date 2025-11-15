@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\CustomAuthenticatedSessionController;
+use App\Http\Controllers\RRHH\ObraSocialController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,5 +41,21 @@ Route::get('/admin', function () {
 Route::get('/rrhh', function () {
     return view('rrhh.dashboard');
 })->middleware('role:rrhh')->name('rrhh.panel');
+
+
+
+Route::middleware(['auth', 'role:Admin|rrhh'])->prefix('rrhh')->group(function () {
+    // CRUD empleados
+    Route::resource('empleados', App\Http\Controllers\RRHH\EmpleadoController::class);
+
+    // Rutas para selects dinámicos
+    Route::resource('bancos', App\Http\Controllers\RRHH\BancoController::class)->only(['index', 'store']);
+    Route::resource('contratos', App\Http\Controllers\RRHH\ContratoController::class)->only(['index', 'store']);
+    Route::resource('condiciones', App\Http\Controllers\RRHH\CondicionLaboralController::class)->only(['index', 'store']);
+
+ Route::resource('obras-sociales', ObraSocialController::class);
+
+
+});
 
 });

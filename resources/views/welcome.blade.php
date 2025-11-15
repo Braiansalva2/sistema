@@ -90,7 +90,7 @@
 
     <div class="container-login">
         <img src="{{ asset('images/logo.webp') }}" alt="GVH Logo" class="logo">
-        <h1>Sistema de Gestión GVH</h1>
+        <h1>Sistema de Gestión</h1>
         <p>Acceso restringido para personal autorizado</p>
         <a href="{{ route('login') }}" class="btn-login">Iniciar Sesión</a>
     </div>

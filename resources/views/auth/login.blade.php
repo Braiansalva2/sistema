@@ -15,7 +15,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: "Segoe UI", sans-serif;
+            font-family: "Segoe UI", sans-serif; 
         }
 
         .login-container {
