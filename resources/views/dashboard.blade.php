@@ -26,7 +26,17 @@
                     <img src="{{ asset('images/logo.webp') }}" alt="GVH Logo" class="rounded me-2" style="width: 40px;">
                     <span class="fw-bold text-uppercase text-white">Panel</span>
                 </div>
+<!-- INFORMACIÓN DEL USUARIO LOGUEADO -->
+<div class="text-center py-3 border-bottom" style="background-color: #b34c1a;">
+    <h6 class="text-white mb-0">{{ Auth::user()->name }}</h6>
+    <small class="text-white-50">{{ Auth::user()->email }}</small>
 
+    <div class="mt-1">
+        @foreach (Auth::user()->getRoleNames() as $rol)
+            <span class="badge bg-light text-dark small">Rol: {{ $rol }}</span>
+        @endforeach
+    </div>
+</div>
                 <nav class="flex-grow-1 p-3">
                     <ul class="nav flex-column fw-semibold">
                         <li class="nav-item mb-2">
@@ -34,7 +44,7 @@
                                 class="nav-link text-dark bg-white bg-opacity-50 rounded px-3 py-2 hover-link">🏠 Inicio</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a href="#" class="nav-link text-dark rounded px-3 py-2 hover-link">👥 Empleados</a>
+                            <a href="{{ route('rrhh.empleados.index') }}" class="nav-link text-dark rounded px-3 py-2 hover-link">👥 Empleados</a>
                         </li>
                         <li class="nav-item mb-2">
                             <a href="#" class="nav-link text-dark rounded px-3 py-2 hover-link">📄 Documentación</a>
@@ -82,7 +92,7 @@
                                 class="nav-link text-dark bg-white bg-opacity-50 rounded px-3 py-2 hover-link">🏠 Inicio</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a href="#" class="nav-link text-dark rounded px-3 py-2 hover-link">👥 Empleados</a>
+                            <a href="{{ route('rrhh.empleados.index') }}" class="nav-link text-dark rounded px-3 py-2 hover-link">👥 Empleados</a>
                         </li>
                         <li class="nav-item mb-2">
                             <a href="#" class="nav-link text-dark rounded px-3 py-2 hover-link">📄 Documentación</a>

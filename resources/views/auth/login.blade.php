@@ -78,7 +78,7 @@
 <body>
 
     <div class="login-container text-center">
-        <img src="{{ asset('images/logo.webp') }}" alt="GVH Logo">
+        <img src="{{ asset('images/LOGO-gvh-26.webp') }}" alt="GVH Logo">
         <h3>Sistema de Gestión GVH</h3>
 
         <form method="POST" action="{{ route('login') }}">

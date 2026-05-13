@@ -18,6 +18,7 @@ class ContactoEmergencia extends Model
         'telefono',
         'domicilio',
         'es_principal',
+        
     ];
 
     public function empleado()

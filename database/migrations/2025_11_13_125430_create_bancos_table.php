@@ -17,6 +17,7 @@ class CreateBancosTable extends Migration
         $table->id();
         $table->string('nombre_banco', 100);
         $table->string('codigo', 20)->nullable();
+       
         $table->timestamps();
     });
 }

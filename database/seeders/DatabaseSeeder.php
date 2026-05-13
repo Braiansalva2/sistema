@@ -38,5 +38,10 @@ class DatabaseSeeder extends Seeder
         $rrhh->assignRole('rrhh');
 
         $this->command->info('Usuarios base creados correctamente: admin@gvh.com y rrhh@gvh.com');
+
+        $this->call([
+        TiposPrendaSeeder::class,
+        TipoPrendaTalleSeeder::class,
+    ]);
     }
 }

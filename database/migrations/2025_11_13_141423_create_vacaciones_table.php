@@ -23,9 +23,25 @@ class CreateVacacionesTable extends Migration
             $table->integer('dias_tomados')->default(0);
             $table->date('fecha_inicio')->nullable();
             $table->date('fecha_fin')->nullable();
-            $table->enum('estado', ['pendiente', 'aprobadas', 'rechazadas', 'finalizadas'])->default('pendiente');
+           
 
             $table->timestamps();
+            $table->enum('estado', [
+    'pendiente',
+    'aprobadas',
+    'rechazadas',
+    'finalizadas'
+])->default('pendiente');
+
+$table->foreignId('aprobado_por')
+    ->nullable()
+    ->constrained('users')
+    ->nullOnDelete();
+
+$table->date('fecha_aprobacion')->nullable();
+
+$table->text('observaciones')->nullable();
+
         });
     }
 

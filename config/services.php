@@ -30,4 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'strix' => [
+    'base_url' => env('STRIX_BASE_URL'),
+    'user' => env('STRIX_USER'),
+    'password' => env('STRIX_PASSWORD'),
+    'account_id' => env('STRIX_ACCOUNT_ID'),
+    ],
+
 ];

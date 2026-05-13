@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Console\Scheduling\Schedule;
 
 class Kernel extends HttpKernel
 {
@@ -38,6 +39,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+               \App\Http\Middleware\CheckUserActive::class,
         ],
 
         'api' => [
@@ -67,5 +69,14 @@ class Kernel extends HttpKernel
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+        'redirect.role' => \App\Http\Middleware\RedirectByRole::class,
+        'tiene_empleado' => \App\Http\Middleware\TieneEmpleado::class,
     ];
+
+
+    protected function schedule(Schedule $schedule)
+{
+    $schedule->command('asistencias:cerrar-automaticamente')
+        ->dailyAt('23:59');
+}
 }

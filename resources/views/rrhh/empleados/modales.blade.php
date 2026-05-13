@@ -9,8 +9,8 @@
             <div class="modal-body">
                 <label>Nombre del banco</label>
                 <input type="text" name="nombre_banco" class="form-control mb-2" required>
-                <label>Código</label>
-                <input type="text" name="codigo" class="form-control">
+                {{-- <label>Código</label>
+                <input type="text" name="codigo" class="form-control"> --}}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn text-white" style="background-color:#a44a20;"
@@ -150,6 +150,38 @@
         </form>
     </div>
 </div>
+<!-- Modal Rol / Puesto -->
+<div class="modal fade" id="modalRolPuesto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="formRolPuesto" class="modal-content">
+            <div class="modal-header" style="background-color:#a44a20;">
+                <h5 class="modal-title text-white">Agregar Rol / Puesto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <label>Nombre del puesto</label>
+                <input type="text" name="nombre_puesto" class="form-control mb-2" required>
+
+                <label>Descripción</label>
+                <textarea name="descripcion" class="form-control"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn text-white"
+                        style="background-color:#a44a20;"
+                        onclick="guardarModal('roles-puestos','rol_puesto_id','modalRolPuesto')">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+
+
 <!-- Modal eliminar -->
 <div class="modal fade" id="modalEliminarObra" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -171,33 +203,74 @@
 
 @push('scripts')
 <script>
+
 function guardarModal(endpoint, selectId, modalId) {
-    const form = document.querySelector(`#${modalId} form`);
+
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const form = modal.querySelector("form");
+    if (!form) return;
+
+    const select = document.getElementById(selectId);
     const data = new FormData(form);
 
     fetch(`{{ url('rrhh') }}/${endpoint}`, {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
         body: data
     })
-    .then(r => r.json())
+    .then(async r => {
+
+        // Errores del backend
+        if (!r.ok) {
+            let errorMsg = "Error: faltan completar campos obligatorios";
+
+            try {
+                const e = await r.json();
+                errorMsg = e.message ?? errorMsg;
+            } catch (e) {}
+
+            alert(errorMsg);
+            return Promise.reject();
+        }
+
+        return r.json();
+    })
     .then(result => {
-        const select = document.getElementById(selectId);
 
-        const texto =
-            result.nombre_banco ??
-            result.tipo_contrato ??
-            result.nombre_condicion ??
-            result.nombre ??
-            'Nuevo';
+        if (!result) return;
 
-        const option = new Option(texto, result.id, true, true);
-        select.add(option);
+        // Agregar opción al select
+        if (select) {
+            const texto =
+                result.nombre_banco ??
+                result.nombre_condicion ??
+                result.nombre_puesto ??
+                result.tipo_contrato ??
+                result.nombre ??
+                'Nuevo';
 
-        bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
+            const option = new Option(texto, result.id, true, true);
+            select.add(option);
+        }
+
+        // Cerrar modal correctamente aunque no tenga instancia previa
+        let modalObj = bootstrap.Modal.getInstance(modal);
+        if (!modalObj) {
+            modalObj = new bootstrap.Modal(modal);
+        }
+        modalObj.hide();
+
+        // Reset form
         form.reset();
     })
-    .catch(err => console.error('ERROR AL GUARDAR:', err));
+    .catch(err => console.error("ERROR:", err));
 }
+
 </script>
 @endpush
+

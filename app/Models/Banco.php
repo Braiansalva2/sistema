@@ -9,7 +9,11 @@ class Banco extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre_banco', 'codigo'];
+    protected $fillable = [
+    'nombre_banco', 
+    'codigo',
+    'numero_cuenta',
+];
 
     public function empleados()
     {
