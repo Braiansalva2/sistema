@@ -143,13 +143,10 @@ private function obtenerLugar($lat, $lon)
         $data = json_decode($response, true);
 
         // 🔥 ACÁ ESTÁ LA CLAVE
-        if (isset($data['address'])) {
-            return $data['address']['city']
-                ?? $data['address']['town']
-                ?? $data['address']['village']
-                ?? $data['address']['state']
-                ?? $data['display_name']
-                ?? 'Ubicación desconocida';
+       if (isset($data['display_name'])) {
+
+             return $data['display_name'];
+
         }
     }
 
@@ -195,7 +192,7 @@ private function obtenerLugar($lat, $lon)
         return back()->with('success', 'Jornada finalizada');
     }
 
-    public function viaje()
+   public function viaje()
 {
     $empleado = Empleado::where('user_id', auth()->id())
         ->firstOrFail();
@@ -207,12 +204,72 @@ private function obtenerLugar($lat, $lon)
     $ultimo = EventoOperativo::where('empleado_id', $empleado->id)
         ->latest('fecha_hora')
         ->first();
-    // CONSENTIMIENTO OPERATIVO
+
+    // Último inicio
+    $ultimoInicio = EventoOperativo::where('empleado_id', $empleado->id)
+        ->where('tipo_evento', 'inicio_jornada')
+        ->latest('fecha_hora')
+        ->first();
+
+    // Último fin
+    $ultimoFin = EventoOperativo::where('empleado_id', $empleado->id)
+        ->where('tipo_evento', 'fin_jornada')
+        ->latest('fecha_hora')
+        ->first();
+
+    $viajeActivo = null;
+
+    if (
+        $ultimoInicio &&
+        (
+            !$ultimoFin ||
+            $ultimoInicio->fecha_hora > $ultimoFin->fecha_hora
+        )
+    ) {
+        $viajeActivo = $ultimoInicio;
+    }
+
+    // Cantidad de reportes
+    $cantidadReportes = 0;
+
+    if ($viajeActivo) {
+
+        $cantidadReportes = EventoOperativo::where(
+                'empleado_id',
+                $empleado->id
+            )
+            ->where('tipo_evento', 'punto_control')
+            ->where('fecha_hora', '>=', $viajeActivo->fecha_hora)
+            ->count();
+    }
+
+    // Último punto reportado
+    $ultimoReporte = EventoOperativo::where(
+            'empleado_id',
+            $empleado->id
+        )
+        ->where('tipo_evento', 'punto_control')
+        ->latest('fecha_hora')
+        ->first();
+
     $consentimiento = ConsentimientoOperativo::where(
-                    'empleado_id',
-                    $empleado->id
-                )->latest()->first();
-    return view('empleado.operativo.viaje', compact('empleado', 'ultimo','consentimiento'));
+            'empleado_id',
+            $empleado->id
+        )
+        ->latest()
+        ->first();
+
+    return view(
+        'empleado.operativo.viaje',
+        compact(
+            'empleado',
+            'ultimo',
+            'viajeActivo',
+            'cantidadReportes',
+            'ultimoReporte',
+            'consentimiento'
+        )
+    );
 }
 
 
@@ -226,9 +283,7 @@ public function guardarConsentimiento(Request $request)
 
     // 🔒 SOLO CHOFER/MIXTO
     if (!in_array($empleado->tipo_empleado, ['chofer', 'mixto'])) {
-
         abort(403);
-
     }
 
     ConsentimientoOperativo::create([
@@ -238,7 +293,7 @@ public function guardarConsentimiento(Request $request)
         'texto_aceptado' => '
             Consentimiento de uso del sistema operativo,
             seguimiento GPS y puntos de control durante
-            jornadas operativas.
+            jornadas operativas o trabajo en base.
         ',
 
         'version' => '1.0',

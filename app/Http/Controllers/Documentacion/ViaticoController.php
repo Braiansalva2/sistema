@@ -17,7 +17,11 @@ class ViaticoController extends Controller
         ->latest()
         ->get();
 
-    $empleados = Empleado::all();
+    $empleados = Empleado::whereIn('tipo_empleado', ['chofer', 'mixto'])
+    ->where('estado', 'Activo')
+    ->orderBy('apellido')
+    ->orderBy('nombre')
+    ->get();
 
     return view('documentacion.viaticos.index', compact('viaticos','empleados'));
 }

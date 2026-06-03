@@ -3,12 +3,124 @@
 @section('content')
 <div class="container-fluid">
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <div>
-            <h2 class="fw-bold text-dark mb-1"> Gestión de Adelantos</h2>
-            <p class="text-muted mb-0">Administrá solicitudes, aprobaciones y pagos de adelantos.</p>
-        </div>
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+
+    <div>
+        <h2 class="fw-bold text-dark mb-1">
+            Gestión de Adelantos
+        </h2>
+
+        <p class="text-muted mb-0">
+            Administrá solicitudes, aprobaciones y pagos de adelantos.
+        </p>
     </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+
+        {{-- BOTÓN CUOTAS --}}
+        <a href="{{ route('rrhh.adelantos.cuotas') }}"
+           class="btn btn-warning shadow-sm">
+
+            <i class="bi bi-cash-stack"></i>
+            Gestión de cuotas
+
+        </a>
+
+       <a href="{{ route('rrhh.adelantos.excepcional.create') }}"
+             class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-circle"></i>
+            Nuevo adelanto excepcional
+        </a>
+    </div>
+
+</div>
+
+{{-- REFERENCIA ESTADOS --}}
+<div class="card border-0 shadow-sm mb-4"
+     style="border-radius:15px;">
+
+    <div class="card-body">
+
+        <div class="d-flex flex-wrap gap-3 align-items-center">
+
+            <strong class="text-dark">
+                📌 Referencia de estados:
+            </strong>
+
+            {{-- PENDIENTE --}}
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-warning text-dark px-3 py-2">
+                    Pendiente
+                </span>
+
+                <small class="text-muted">
+                    Solicitud enviada por el empleado.
+                </small>
+
+            </div>
+
+            {{-- APROBADO --}}
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-success px-3 py-2">
+                    Aprobado
+                </span>
+
+                <small class="text-muted">
+                    RRHH aprobó la solicitud.
+                </small>
+
+            </div>
+
+            {{-- PAGADO --}}
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-primary px-3 py-2">
+                    Pagado
+                </span>
+
+                <small class="text-muted">
+                    El empleado recibió el adelanto.
+                </small>
+
+            </div>
+
+            {{-- SALDADO --}}
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-success px-3 py-2">
+                    ✔ Saldado
+                </span>
+
+                <small class="text-muted">
+                    Todas las cuotas fueron descontadas.
+                </small>
+
+            </div>
+
+            {{-- RECHAZADO --}}
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-danger px-3 py-2">
+                    Rechazado
+                </span>
+
+                <small class="text-muted">
+                    Solicitud rechazada por RRHH.
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
 
     @if(session('success'))
         <div class="alert alert-success shadow-sm">
@@ -100,10 +212,20 @@
                     </thead>
                     <tbody>
                         @forelse($adelantos as $adelanto)
-                            @php
-                                $pagadas = $adelanto->movimientos->where('tipo', 'descuento')->count();
-                                $restantes = $adelanto->cuotas_total - $pagadas;
-                                $valorCuota = $adelanto->cuotas_total > 0 ? $adelanto->monto_total / $adelanto->cuotas_total : 0;
+                           @php
+
+                                $pagadas = $adelanto->cuotas
+                                    ->where('estado', 'pagada')
+                                    ->count();
+
+                                $restantes = $adelanto->cuotas
+                                    ->where('estado', 'pendiente')
+                                    ->count();
+
+                                $valorCuota = $adelanto->cuotas_total > 0
+                                    ? $adelanto->monto_total / $adelanto->cuotas_total
+                                    : 0;
+
                             @endphp
 
                             <tr>
@@ -143,6 +265,10 @@
                                         <span class="badge bg-danger px-3 py-2">Rechazado</span>
                                     @elseif($adelanto->estado == 'pagado')
                                         <span class="badge bg-primary px-3 py-2">Pagado</span>
+                                    @elseif($adelanto->estado == 'saldado')
+                                        <span class="badge bg-success px-3 py-2">
+                                            Saldado
+                                        </span>
                                     @endif
                                 </td>
 
@@ -224,7 +350,7 @@
                                                         <div class="col-md-6">
                                                             <label class="form-label fw-semibold">Estado</label>
                                                             <div class="form-control bg-light">
-                                                                {{ ucfirst($adelanto->estado) }}
+                                                                {{ ucfirst($adelanto->estado) }}  
                                                             </div>
                                                         </div>
 
@@ -324,15 +450,24 @@
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
-                                                                        @php
-                                                                            $cuotas = $adelanto->movimientos->where('tipo', 'descuento')->values();
+                                                                       @php
+                                                                            $cuotas = $adelanto->cuotas;
                                                                         @endphp
 
                                                                         @forelse($cuotas as $index => $cuota)
                                                                             <tr>
-                                                                                <td>{{ $index + 1 }}</td>
-                                                                                <td>${{ number_format($cuota->monto, 2, ',', '.') }}</td>
-                                                                                <td>{{ $cuota->fecha ? \Carbon\Carbon::parse($cuota->fecha)->format('d/m/Y') : '-' }}</td>
+                                                                                
+                                                                                <<td>#{{ $cuota->numero_cuota }}</td>
+
+                                                                                        <td>
+                                                                                            ${{ number_format($cuota->monto, 0, ',', '.') }}
+                                                                                        </td>
+
+                                                                                        <td>
+                                                                                            {{ $cuota->fecha_pago
+                                                                                                ? \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y')
+                                                                                                : '-' }}
+                                                                                        </td>
                                                                                 <td>
                                                                                     @if($cuota->comprobante_pago)
                                                                                         <a href="{{ asset('storage/' . $cuota->comprobante_pago) }}" target="_blank">

@@ -65,7 +65,8 @@
         data-nombre="{{ strtolower($v->empleado->nombre.' '.$v->empleado->apellido) }}"
         data-dni="{{ $v->empleado->dni }}"
         data-estado="{{ $v->estado }}"
-        data-fecha="{{ $v->fecha_salida }}"
+        data-fecha_salida="{{ optional($v->fecha_salida)->format('Y-m-d H:i:s') }}"
+        data-fecha_regreso="{{ optional($v->fecha_regreso)->format('Y-m-d H:i:s') }}"
     >
         <td>{{ $v->codigo }}</td>
 
@@ -115,7 +116,7 @@
   <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
 </svg></a>
 
-            <button 
+<button
     type="button"
     class="btn btn-warning btn-sm btn-editar"
     data-bs-toggle="modal"
@@ -126,7 +127,8 @@
     data-origen="{{ $v->origen }}"
     data-destino="{{ $v->destino }}"
     data-movil="{{ $v->movil }}"
-    data-fecha="{{ $v->fecha_salida }}"
+    data-fecha_salida="{{ optional($v->fecha_salida)->format('Y-m-d H:i:s') }}"
+    data-fecha_regreso="{{ optional($v->fecha_regreso)->format('Y-m-d H:i:s') }}"
     data-dias="{{ $v->dias }}"
     data-dias_extra="{{ $v->dias_extra }}"
     data-es_extension="{{ $v->es_extension }}"
@@ -305,11 +307,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
                         <div class="col-md-4 mb-3">
                             <label>Chofer</label>
-                            <select name="empleado_id" class="form-control" required>
-                                <option value="">Seleccionar</option>
+                            <select name="empleado_id"
+                                    id="empleado_id"
+                                    class="form-control select2"
+                                    required>
+                                <option value="">Buscar chofer...</option>
+
                                 @foreach($empleados as $emp)
                                     <option value="{{ $emp->id }}">
-                                        {{ $emp->nombre }} {{ $emp->apellido }}
+                                        {{ $emp->apellido }}, {{ $emp->nombre }} - DNI: {{ $emp->dni }}
                                     </option>
                                 @endforeach
                             </select>
@@ -336,19 +342,37 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
 
                         <div class="col-md-4 mb-3">
-                            <label>Fecha Salida</label>
-                            <input type="date" name="fecha_salida" class="form-control" required>
+                            <label>Fecha y hora de Salida</label>
+                          <input type="datetime-local"
+                                name="fecha_salida"
+                                id="fecha_salida"
+                                class="form-control"
+                                required>
                         </div>
 
                         <div class="col-md-4 mb-3">
-                            <label>Fecha Regreso</label>
-                            <input type="date" name="fecha_regreso" class="form-control">
+                            <label>Fecha y hora de Regreso </label>
+                           <input type="datetime-local"
+                                    name="fecha_regreso"
+                                    id="fecha_regreso"
+                                    class="form-control">
                         </div>
 
                         <div class="col-md-4 mb-3">
                             <label>Días</label>
-                            <input type="number" name="dias" class="form-control" value="1">
+                           <input type="number"
+                                    name="dias"
+                                    id="dias"
+                                    class="form-control"
+                                    value="1"
+                                    readonly>
                         </div>
+                        <div class="col-md-8 mb-3">
+                            <div id="resumenViatico" class="alert alert-info d-none mb-0">
+                                <strong>🍽️ Cálculo automático:</strong>
+                                <div id="detalleViatico"></div>
+                            </div>
+</div>
 
                     </div>
 
@@ -693,57 +717,83 @@ document.addEventListener("DOMContentLoaded", function() {
 <div class="modal-body">
 
 <div class="row mb-3">
-    <div class="col-md-3">
+   <div class="row">
+
+    <div class="col-md-3 mb-3">
         <label>Código</label>
         <input type="text" id="edit_codigo" class="form-control" readonly>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-3 mb-3">
         <label>Empleado</label>
         <input type="text" id="edit_empleado" class="form-control" readonly>
     </div>
 
-    <div class="col-md-3">
-        <label>Fecha</label>
-        <input type="date" name="fecha_salida" id="edit_fecha" class="form-control">
-    </div>
-
-    <div class="col-md-3">
+    <div class="col-md-3 mb-3">
         <label>Móvil</label>
-        <input type="text" name="movil" id="edit_movil" class="form-control">
+        <input type="text"
+               name="movil"
+               id="edit_movil"
+               class="form-control">
     </div>
-</div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
+    <div class="col-md-3 mb-3">
         <label>Origen</label>
-        <input type="text" name="origen" id="edit_origen" class="form-control">
+        <input type="text"
+               name="origen"
+               id="edit_origen"
+               class="form-control">
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4 mb-3">
         <label>Destino</label>
-        <input type="text" name="destino" id="edit_destino" class="form-control">
+        <input type="text"
+               name="destino"
+               id="edit_destino"
+               class="form-control">
     </div>
-</div>
 
-<div class="row mb-4">
-    <div class="col-md-6" id="campo_dias">
+    <div class="col-md-4 mb-3">
+        <label>Fecha y hora de Salida</label>
+        <input type="datetime-local"
+               name="fecha_salida"
+               id="edit_fecha_salida"
+               class="form-control"
+               required>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <label>Fecha y hora de Regreso</label>
+        <input type="datetime-local"
+               name="fecha_regreso"
+               id="edit_fecha_regreso"
+               class="form-control">
+    </div>
+
+    <div class="col-md-4 mb-3">
         <label>Días</label>
-        <input type="number" name="dias" id="edit_dias" class="form-control">
+        <input type="number"
+               name="dias"
+               id="edit_dias"
+               class="form-control"
+               readonly>
     </div>
 
-    <div class="col-md-6 d-none" id="campo_dias_extra">
-        <label>Días extra</label>
-        <input type="number" name="dias_extra" id="edit_dias_extra" class="form-control">
+    <div class="col-md-8 mb-3">
+        <div id="edit_resumenViatico"
+             class="alert alert-info d-none mb-0">
+            <strong>🍽️ Cálculo automático:</strong>
+            <div id="edit_detalleViatico"></div>
+        </div>
     </div>
-</div>
 
-
-<div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-12 mb-3">
         <label>Observaciones</label>
-        <textarea id="edit_observaciones" name="observacion_general" class="form-control"></textarea>
+        <textarea id="edit_observaciones"
+                  name="observacion_general"
+                  class="form-control"></textarea>
     </div>
+
 </div>
 
 <hr>
@@ -946,53 +996,55 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    document.querySelectorAll('.btn-editar').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const id = this.dataset.id;
+   document.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const id = this.dataset.id;
 
-            formEditar.action = `/documentacion/viaticos/${id}`;
+        formEditar.action = `/documentacion/viaticos/${id}`;
 
-            document.getElementById('edit_codigo').value = this.dataset.codigo || '';
-            document.getElementById('edit_empleado').value = this.dataset.empleado || '';
-            document.getElementById('edit_origen').value = this.dataset.origen || '';
-            document.getElementById('edit_destino').value = this.dataset.destino || '';
-            document.getElementById('edit_movil').value = this.dataset.movil || '';
-            document.getElementById('edit_fecha').value = this.dataset.fecha || '';
-            document.getElementById('edit_observaciones').value = this.dataset.observaciones || '';
+        document.getElementById('edit_codigo').value = this.dataset.codigo || '';
+        document.getElementById('edit_empleado').value = this.dataset.empleado || '';
+        document.getElementById('edit_origen').value = this.dataset.origen || '';
+        document.getElementById('edit_destino').value = this.dataset.destino || '';
+        document.getElementById('edit_movil').value = this.dataset.movil || '';
+        document.getElementById('edit_observaciones').value = this.dataset.observaciones || '';
+        document.getElementById('edit_dias').value =
+            this.dataset.dias || this.dataset.dias_extra || '';
 
-            if (this.dataset.es_extension == '1') {
-                document.getElementById('campo_dias').classList.add('d-none');
-                document.getElementById('campo_dias_extra').classList.remove('d-none');
-                document.getElementById('edit_dias_extra').value = this.dataset.dias_extra || '';
-            } else {
-                document.getElementById('campo_dias').classList.remove('d-none');
-                document.getElementById('campo_dias_extra').classList.add('d-none');
-                document.getElementById('edit_dias').value = this.dataset.dias || '';
-            }
+        function formatearFecha(fecha) {
+            if (!fecha) return '';
+            return fecha.replace(' ', 'T').substring(0, 16);
+        }
 
-            fetch(`/documentacion/viaticos/${id}/json`)
-                .then(res => {
-                    if (!res.ok) throw new Error('No se pudo obtener el viático en JSON');
-                    return res.json();
-                })
-                .then(data => {
-                    bodyEdit.innerHTML = '';
+        console.log('Salida:', this.dataset.fecha_salida);
+        console.log('Regreso:', this.dataset.fecha_regreso);
 
-                    if (data.detalles && data.detalles.length) {
-                        data.detalles.forEach(d => agregarFilaEdit(d));
-                    } else {
-                        agregarFilaEdit();
-                    }
+        document.getElementById('edit_fecha_salida').value =
+            formatearFecha(this.dataset.fecha_salida);
 
-                    calcularTotalEdit();
-                })
-                .catch(error => {
-                    console.error(error);
-                    bodyEdit.innerHTML = '';
+        document.getElementById('edit_fecha_regreso').value =
+            formatearFecha(this.dataset.fecha_regreso);
+
+        fetch(`/documentacion/viaticos/${id}/json`)
+            .then(res => res.json())
+            .then(data => {
+                bodyEdit.innerHTML = '';
+
+                if (data.detalles && data.detalles.length) {
+                    data.detalles.forEach(d => agregarFilaEdit(d));
+                } else {
                     agregarFilaEdit();
-                });
-        });
+                }
+
+                calcularTotalEdit();
+            })
+            .catch(error => {
+                console.error(error);
+                bodyEdit.innerHTML = '';
+                agregarFilaEdit();
+            });
     });
+});
 
     document.querySelectorAll('.btn-extender').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -1146,7 +1198,7 @@ document.addEventListener('input', function(e){
 });
 
 
-// 🔥 TOTAL GENERAL
+// TOTAL GENERAL
 function calcularTotal(){
 
     let total = 0;
@@ -1211,8 +1263,96 @@ function calcularTotal(){
 
     document.getElementById('totalEditExtension').value = total.toFixed(2);
 }
-    // =========================
+   
 
 });
 </script>
-@endsection
+
+<script>
+$(document).ready(function () {
+    $('.select2').select2({
+        dropdownParent: $('#modalViatico'),
+        width: '100%',
+        placeholder: 'Buscar chofer...',
+        allowClear: true,
+        language: {
+            noResults: function () {
+                return "No se encontraron resultados";
+            }
+        }
+    });
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const fechaSalida = document.getElementById('fecha_salida');
+    const fechaRegreso = document.getElementById('fecha_regreso');
+    const diasInput = document.getElementById('dias');
+
+    const resumen = document.getElementById('resumenViatico');
+    const detalle = document.getElementById('detalleViatico');
+
+    function calcularViatico() {
+        if (!fechaSalida.value || !fechaRegreso.value) {
+            resumen.classList.add('d-none');
+            return;
+        }
+
+        const salida = new Date(fechaSalida.value);
+        const regreso = new Date(fechaRegreso.value);
+
+        if (regreso <= salida) {
+            resumen.classList.add('d-none');
+            return;
+        }
+
+        // Diferencia en días (redondeando hacia arriba)
+        const diffMs = regreso - salida;
+        const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        diasInput.value = dias;
+
+        // Cálculo de almuerzos y cenas  
+        let almuerzos = 0;
+        let cenas = 0;
+
+        let fecha = new Date(salida);
+
+        while (fecha <= regreso) {
+
+            // Almuerzo (12:00)
+            let almuerzo = new Date(fecha);
+            almuerzo.setHours(12, 0, 0, 0);
+
+            if (almuerzo >= salida && almuerzo <= regreso) {
+                almuerzos++;
+            }
+
+            // Cena (20:00)
+            let cena = new Date(fecha);
+            cena.setHours(20, 0, 0, 0);
+
+            if (cena >= salida && cena <= regreso) {
+                cenas++;
+            }
+
+            fecha.setDate(fecha.getDate() + 1);
+        }
+
+        detalle.innerHTML = `
+            <div>📅 Días calculados: <strong>${dias}</strong></div>
+            <div>🍽️ Almuerzos: <strong>${almuerzos}</strong></div>
+            <div>🌙 Cenas: <strong>${cenas}</strong></div>
+        `;
+
+        resumen.classList.remove('d-none');
+    }
+
+    fechaSalida.addEventListener('change', calcularViatico);
+    fechaRegreso.addEventListener('change', calcularViatico);
+});
+</script>
+@endsection 

@@ -35,12 +35,53 @@
         </div>
     </div>
 
-    {{-- FORMULARIO --}}
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <h5 class="mb-3">Solicitar licencia</h5>
+  {{-- FORMULARIO --}}
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+        <h5 class="mb-3">Solicitar licencia</h5>
 
-            <form action="{{ route('empleado.licencias.store') }}" method="POST" enctype="multipart/form-data">
+        @if($licenciaActiva)
+            <div class="alert alert-warning border-0 shadow-sm">
+                <h6 class="fw-bold mb-2">⚠️ Ya tienes una licencia en curso</h6>
+
+                <p class="mb-1">
+                    Actualmente tienes una solicitud de licencia
+                    <strong>{{ $licenciaActiva->estado }}</strong>.
+                </p>
+
+                <p class="mb-1">
+                    Tipo: <strong>{{ ucfirst($licenciaActiva->tipo) }}</strong>
+                </p>
+
+                @if($licenciaActiva->fecha_desde)
+                    <p class="mb-1">
+                        Fecha:
+                        <strong>{{ $licenciaActiva->fecha_desde->format('d/m/Y') }}</strong>
+
+                        @if($licenciaActiva->fecha_hasta)
+                            al <strong>{{ $licenciaActiva->fecha_hasta->format('d/m/Y') }}</strong>
+                        @endif
+                    </p>
+                @endif
+
+                <small class="text-muted">
+                    Solo puedes solicitar una licencia a la vez. Debes esperar a que RRHH la rechace, finalice o cierre para solicitar una nueva.
+                </small>
+            </div>
+
+            <button class="btn btn-secondary" disabled>
+                Solicitud bloqueada
+            </button>
+        @else
+
+            <div class="alert alert-info border-0 shadow-sm">
+                Solo puedes tener una licencia pendiente o aprobada a la vez.
+            </div>
+
+        <form id="formLicencia"
+      action="{{ route('empleado.licencias.store') }}"
+      method="POST"
+      enctype="multipart/form-data">
                 @csrf
 
                 {{-- TIPO --}}
@@ -96,11 +137,20 @@
                     <textarea name="observaciones" class="form-control"></textarea>
                 </div>
 
-                <button class="btn btn-primary">Enviar solicitud</button>
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="btnEnviarSolicitud">
 
+                        <span class="texto-btn">
+                            Enviar solicitud
+                        </span>
+
+                    </button>
             </form>
-        </div>
+
+        @endif
     </div>
+</div>
 
     {{-- HISTORIAL --}}
     <div class="card shadow-sm border-0">
@@ -208,5 +258,32 @@ function cambiarFormulario() {
     }
 }
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
+    const formulario = document.getElementById('formLicencia');
+    const boton = document.getElementById('btnEnviarSolicitud');
+
+    // verificar si existe
+    if (!formulario || !boton) {
+        return;
+    }
+
+    formulario.addEventListener('submit', function () {
+
+        // bloquear botón
+        boton.disabled = true;
+
+        // mostrar spinner
+        boton.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Enviando...
+        `;
+
+    });
+
+});
+</script>
 @endsection

@@ -73,7 +73,7 @@
                                 <div class="card-body">
                                     <h5 class="card-title text-uppercase fw-bold" style="color: #b34c1a;">Documentación</h5>
                                     <p class="text-muted mb-4">Gestión de archivos y reportes internos.</p>
-                                    <a href="#" class="btn text-white fw-semibold px-4 py-2"
+                                    <a href="{{ route('documentacion.viaticos.index') }}" class="btn text-white fw-semibold px-4 py-2"
                                         style="background-color: #b34c1a;">Entrar</a>
                                 </div>
                             </div>

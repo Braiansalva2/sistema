@@ -11,6 +11,7 @@ use App\Models\Licencia;
 use App\Models\TipoPrenda;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EmpleadoPortalController extends Controller
 {
@@ -90,14 +91,26 @@ return view('empleado.perfil', compact('empleado', 'talles', 'empleadoTalles'));
     $empleado = Empleado::where('user_id', auth()->id())->firstOrFail();
 
     $adelantos = $empleado->adelantos()
-        ->with('movimientos')
+        ->with(['movimientos', 'cuotas'])
         ->latest()
         ->take(3)
         ->get();
 
-    return view('empleado.adelantos', compact('empleado', 'adelantos'));
-}
+    // 🔥 BLOQUEAR SI TIENE ADELANTO ACTIVO
+    $yaSolicitoEsteMes = Adelanto::where('empleado_id', $empleado->id)
+        ->whereIn('estado', [
+            'pendiente',
+            'aprobado',
+            'pagado'
+        ])
+        ->exists();
 
+    return view('empleado.adelantos', compact(
+        'empleado',
+        'adelantos',
+        'yaSolicitoEsteMes'
+    ));
+}
 public function guardarAdelanto(Request $request)
 {
     // 🔹 Validación
@@ -110,6 +123,22 @@ public function guardarAdelanto(Request $request)
     // 🔹 Obtener empleado logueado
     $empleado = Empleado::where('user_id', auth()->id())->firstOrFail();
 
+    // 🔥 VALIDAR ADELANTO ACTIVO
+    $yaSolicito = Adelanto::where('empleado_id', $empleado->id)
+        ->whereIn('estado', [
+            'pendiente',
+            'aprobado',
+            'pagado'
+        ])
+        ->exists();
+
+    if ($yaSolicito) {
+
+        return redirect()
+            ->route('empleado.adelantos')
+            ->with('error', 'Ya tienes un adelanto activo.');
+    }
+
     // 🔹 Crear adelanto
     Adelanto::create([
         'empleado_id' => $empleado->id,
@@ -120,7 +149,6 @@ public function guardarAdelanto(Request $request)
         'fecha_solicitud' => now(),
     ]);
 
-    // 🔹 Redirigir con mensaje
     return redirect()
         ->route('empleado.adelantos')
         ->with('success', 'Solicitud de adelanto enviada correctamente.');
@@ -131,7 +159,7 @@ public function historialAdelantos()
     $empleado = Empleado::where('user_id', auth()->id())->firstOrFail();
 
     $adelantos = $empleado->adelantos()
-        ->with('movimientos')
+       ->with('cuotas')
         ->latest()
         ->paginate(8);
 
@@ -215,23 +243,44 @@ public function guardarPermiso(Request $request)
         ->with('success', 'Permiso solicitado correctamente');
 }   
 
-
-
 public function licencias()
 {
     $empleado = Empleado::where('user_id', auth()->id())->firstOrFail();
+
+    // 🔥 FINALIZAR LICENCIAS VENCIDAS
+    $this->finalizarLicenciasVencidas($empleado->id);
 
     $licencias = Licencia::where('empleado_id', $empleado->id)
         ->orderBy('created_at', 'desc')
         ->take(3)
         ->get();
 
-    return view('empleado.licencias', compact('empleado', 'licencias'));
-}
+    $licenciaActiva = Licencia::where('empleado_id', $empleado->id)
+        ->whereIn('estado', ['pendiente', 'aprobada'])
+        ->latest()
+        ->first();
 
+    return view('empleado.licencias', compact('empleado', 'licencias', 'licenciaActiva'));
+}
 public function guardarLicencia(Request $request)
 {
     $empleado = Empleado::where('user_id', auth()->id())->firstOrFail();
+
+    // 🔥 FINALIZAR LICENCIAS VENCIDAS
+    $this->finalizarLicenciasVencidas($empleado->id);
+    
+    // 🔥 VALIDAR SI YA TIENE UNA LICENCIA ACTIVA/PENDIENTE
+    $licenciaActiva = Licencia::where('empleado_id', $empleado->id)
+        ->whereIn('estado', ['pendiente', 'aprobada'])
+        ->exists();
+
+    if ($licenciaActiva) {
+        return back()
+            ->withErrors([
+                'licencia' => 'Ya tienes una licencia pendiente o aprobada. No puedes solicitar otra por el momento.'
+            ])
+            ->withInput();
+    }
 
     // 🔹 Validación base
     $request->validate([
@@ -326,6 +375,26 @@ public function historialLicencias()
 
     return view('empleado.licencias_historial', compact('empleado', 'licencias'));
 }
+
+private function finalizarLicenciasVencidas(int $empleadoId)
+{
+    Licencia::where('empleado_id', $empleadoId)
+        ->where('estado', 'aprobada')
+        ->whereDate(
+            DB::raw('COALESCE(fecha_hasta, fecha_desde)'),
+            '<',
+            now()->toDateString()
+        )
+        ->update([
+            'estado' => 'finalizada'
+        ]);
+
+
+}
+
+
+
+
 
 
 

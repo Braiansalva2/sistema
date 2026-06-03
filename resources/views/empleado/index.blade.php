@@ -73,7 +73,8 @@
     $tipo = auth()->user()->empleado->tipo_empleado;
 @endphp
 
-@if($tipo !== 'roster')
+{{-- Mostrar Asistencia solo para empleados tipo "base" --}}
+@if($tipo === 'base')
 <div class="col-6">
     <a href="{{ route('empleado.asistencia') }}" style="text-decoration:none;">
         <div class="card card-opcion text-center p-3">

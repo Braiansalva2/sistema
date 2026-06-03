@@ -22,6 +22,7 @@ class Adelanto extends Model
         'pagado_por',
         'fecha_solicitud',
         'motivo',
+        'origen',
     ];
 
     protected $casts = [
@@ -30,7 +31,7 @@ class Adelanto extends Model
         'fecha_pago' => 'date',
     ];
 
-    // 🔹 RELACIONES
+    //RELACIONES
 
     public function empleado()
     {
@@ -47,9 +48,14 @@ class Adelanto extends Model
         return $this->belongsTo(User::class, 'pagado_por');
     }
 
-    // 🔥 Relación con cuotas (movimientos)
+    // Relación con cuotas (movimientos)
     public function movimientos()
     {
         return $this->hasMany(MovimientoEmpleado::class, 'adelanto_id');
     }
+
+    public function cuotas()
+{
+    return $this->hasMany(AdelantoCuota::class);
+}
 }

@@ -5,99 +5,118 @@ namespace App\Http\Controllers\RRHH;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\TipoPrenda;
-
+use App\Models\Empleado;
 
 class TipoPrendaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
- public function index()
-{
-    $prendas = TipoPrenda::with('talles')
-        ->latest()
-        ->paginate(10);
-
-    return view('rrhh.indumentaria.index', compact('prendas'));
-}
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function index()
     {
-        //
+        $prendas = TipoPrenda::with('talles')
+            ->latest()
+            ->paginate(10);
+
+        $empleados = Empleado::where('estado', 'Activo')
+            ->orderBy('apellido')
+            ->orderBy('nombre')
+            ->get();
+
+        return view('rrhh.indumentaria.index', compact('prendas', 'empleados'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-   public function store(Request $request)
-{
-    TipoPrenda::create([
-        'nombre' => $request->nombre,
-        'estado' => true
-    ]);
-
-    return back()->with('success', 'Prenda creada');
-}
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    public function store(Request $request)
     {
-        //
+        TipoPrenda::create([
+            'nombre' => $request->nombre,
+            'estado' => true
+        ]);
+
+        return back()->with('success', 'Prenda creada');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
+    public function update(Request $request, $id)
     {
-        //
+        $prenda = TipoPrenda::findOrFail($id);
+
+        $prenda->update([
+            'nombre' => $request->nombre,
+            'estado' => $request->estado
+        ]);
+
+        return back()->with('success', 'Prenda actualizada');
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-   public function update(Request $request, $id)
-{
-    $prenda = TipoPrenda::findOrFail($id);
-
-    $prenda->update([
-        'nombre' => $request->nombre,
-        'estado' => $request->estado
-    ]);
-
-    return back()->with('success', 'Prenda actualizada');
-}
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
+    public function exportarEmpleados(Request $request)
     {
-        //
+        $tipoExportacion = $request->tipo_exportacion;
+
+        $prendas = TipoPrenda::where('estado', true)
+            ->orderBy('nombre')
+            ->get();
+
+        $query = Empleado::with([
+                'rolPuesto',
+                'talles.tipoPrenda',
+                'talles.talle'
+            ])
+            ->orderBy('apellido')
+            ->orderBy('nombre');
+
+        if ($tipoExportacion === 'seleccionados') {
+            $request->validate([
+                'empleado_ids' => 'required|array',
+                'empleado_ids.*' => 'exists:empleados,id',
+            ]);
+
+            $query->whereIn('id', $request->empleado_ids);
+        }
+
+        $empleados = $query->get();
+
+        return response()->streamDownload(function () use ($empleados, $prendas) {
+
+            $handle = fopen('php://output', 'w');
+
+            // BOM UTF-8 para que Excel lea bien acentos y ñ
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            $header = [
+                'Empleado',
+                'DNI',
+                'Puesto',
+            ];
+
+            foreach ($prendas as $prenda) {
+                $header[] = $prenda->nombre;
+            }
+
+            fputcsv($handle, $header, ';');
+
+            foreach ($empleados as $empleado) {
+
+                $fila = [
+                    $empleado->apellido . ' ' . $empleado->nombre,
+                    $empleado->dni,
+                    optional($empleado->rolPuesto)->nombre ?? 'Sin puesto',
+                ];
+
+                foreach ($prendas as $prenda) {
+
+                    $talleEmpleado = $empleado->talles
+                        ->where('tipo_prenda_id', $prenda->id)
+                        ->first();
+
+                    $fila[] = $talleEmpleado && $talleEmpleado->talle
+                        ? $talleEmpleado->talle->nombre
+                        : 'Sin talle';
+                }
+
+                fputcsv($handle, $fila, ';');
+            }
+
+            fclose($handle);
+
+        }, 'talles_empleados_' . now()->format('Y_m_d_H_i') . '.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

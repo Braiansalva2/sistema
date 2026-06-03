@@ -110,8 +110,6 @@ public function historial(Request $request)
 
   return view('rrhh.operativo.viajes', compact('viajes','empleados'));
 }
-
-
 public function detalle($id)
 {
     $inicio = EventoOperativo::findOrFail($id);
@@ -119,7 +117,14 @@ public function detalle($id)
     $eventos = EventoOperativo::where('empleado_id', $inicio->empleado_id)
         ->where('fecha_hora', '>=', $inicio->fecha_hora)
         ->orderBy('fecha_hora')
-        ->get();
+        ->get([
+            'id',
+            'tipo_evento',
+            'fecha_hora',
+            'lugar',
+            'latitud',
+            'longitud'
+        ]);
 
     return response()->json($eventos);
 }

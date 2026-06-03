@@ -29,6 +29,11 @@ class Viatico extends Model
         'observaciones'
     ];
 
+      protected $casts = [
+        'fecha_salida' => 'datetime',
+        'fecha_regreso' => 'datetime',
+    ];
+
     //  RELACIÓN CON EMPLEADO
     public function empleado()
     {

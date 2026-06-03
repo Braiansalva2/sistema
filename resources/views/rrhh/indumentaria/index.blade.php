@@ -14,14 +14,21 @@
                 Gestión de prendas y talles
             </small>
         </div>
+<div class="d-flex gap-2">
 
-        <button class="btn btn-primary rounded-pill px-4 shadow-sm"
-                data-bs-toggle="modal"
-                data-bs-target="#modalNuevaPrenda">
+    <button class="btn btn-success rounded-pill px-4 shadow-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modalExportarEmpleados">
+        📥 Exportar empleados
+    </button>
 
-            + Nueva prenda
+    <button class="btn btn-primary rounded-pill px-4 shadow-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modalNuevaPrenda">
+        + Nueva prenda
+    </button>
 
-        </button>
+</div>
 
     </div>
 
@@ -471,5 +478,135 @@
     </div>
 
 </div>
+{{-- MODAL EXPORTAR EMPLEADOS --}}
+<div class="modal fade" id="modalExportarEmpleados" tabindex="-1">
 
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content border-0 rounded-4">
+
+            <form method="GET"
+                  action="{{ route('rrhh.tipos-prenda.exportar-empleados') }}">
+
+                <div class="modal-header border-0">
+
+                    <h5 class="modal-title fw-bold">
+                        📥 Exportar talles de empleados
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Tipo de exportación
+                        </label>
+
+                        <select name="tipo_exportacion"
+                                id="tipo_exportacion"
+                                class="form-select"
+                                required>
+
+                            <option value="todos">
+                                Todos los empleados
+                            </option>
+
+                            <option value="seleccionados">
+                                Seleccionar empleados
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div id="boxEmpleadosSeleccionados" class="d-none">
+
+                        <label class="form-label fw-bold">
+                            Seleccionar empleados
+                        </label>
+
+                        <div class="border rounded-4 p-3 bg-light"
+                             style="max-height: 320px; overflow-y: auto;">
+
+                            @foreach($empleados as $empleado)
+
+                                <div class="form-check mb-2">
+
+                                    <input class="form-check-input empleado-check"
+                                           type="checkbox"
+                                           name="empleado_ids[]"
+                                           value="{{ $empleado->id }}"
+                                           id="empleadoExport{{ $empleado->id }}">
+
+                                    <label class="form-check-label"
+                                           for="empleadoExport{{ $empleado->id }}">
+                                        {{ $empleado->apellido }} {{ $empleado->nombre }}
+                                        - DNI: {{ $empleado->dni }}
+                                    </label>
+
+                                </div>
+
+                            @endforeach
+
+                        </div>
+
+                        <small class="text-muted">
+                            Marcá solo los empleados que querés incluir en el Excel.
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button type="button"
+                            class="btn btn-light rounded-pill px-4"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button class="btn btn-success rounded-pill px-4">
+                        Descargar Excel
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tipoExportacion = document.getElementById('tipo_exportacion');
+    const boxEmpleados = document.getElementById('boxEmpleadosSeleccionados');
+    const checksEmpleados = document.querySelectorAll('.empleado-check');
+
+    function actualizarFiltroEmpleados() {
+        if (tipoExportacion.value === 'seleccionados') {
+            boxEmpleados.classList.remove('d-none');
+        } else {
+            boxEmpleados.classList.add('d-none');
+
+            checksEmpleados.forEach(function (check) {
+                check.checked = false;
+            });
+        }
+    }
+
+    tipoExportacion.addEventListener('change', actualizarFiltroEmpleados);
+
+    actualizarFiltroEmpleados();
+
+});
+</script>
 @endsection

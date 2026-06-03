@@ -18,6 +18,10 @@ class MovimientoEmpleado extends Model
         'cantidad',
         'fecha',
         'descripcion',
+        'adelanto_id',
+        'estado',
+        'comprobante_pago',
+        'pagado_por',
     ];
 
     protected $casts = [

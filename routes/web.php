@@ -28,7 +28,9 @@ use App\Http\Controllers\RRHH\RRHHOperativoController;
 use App\Http\Controllers\RRHH\RosterController;
 
 //documentacion 
+
 use App\Http\Controllers\Documentacion\ViaticoController;
+use App\Http\Controllers\Documentacion\ViaticoReporteController;
 
 // COMERCIAL
 use App\Http\Controllers\Comercial\ComercialController;
@@ -247,6 +249,8 @@ Route::prefix('empleados/{empleado}')
             [ViaticoController::class, 'store']
         )->name('store');
 
+
+
     });
 
             /* ========================
@@ -295,7 +299,28 @@ Route::prefix('empleados/{empleado}')
 
 
 // ruta para los adelantos rrhh
-                Route::prefix('adelantos')->name('adelantos.')->group(function () {
+             Route::prefix('adelantos')->name('adelantos.')->group(function () {
+                
+                   //    descontar o pago de cuota
+                Route::get('/cuotas', [AdelantoController::class, 'cuotas'])
+                    ->name('cuotas');
+
+                 Route::post('/cuotas/pagar', [AdelantoController::class, 'pagarCuotas'])
+                 ->name('cuotas.pagar');
+
+
+                    Route::get('/excepcional/crear', [AdelantoController::class, 'crearExcepcional'])
+                        ->name('excepcional.create');
+
+                    Route::post('/excepcional/guardar', [AdelantoController::class, 'guardarExcepcional'])
+                        ->name('excepcional.store');
+
+                    Route::get('/empleados/buscar', [AdelantoController::class, 'buscarEmpleado'])
+                        ->name('empleados.buscar');
+
+                    Route::get('/empleados/{id}/historial', [AdelantoController::class, 'historialEmpleado'])
+                        ->name('empleados.historial');   
+
 
                 Route::get('/', [AdelantoController::class, 'index'])->name('index');
 
@@ -306,8 +331,8 @@ Route::prefix('empleados/{empleado}')
                 Route::put('/{id}/rechazar', [AdelantoController::class, 'rechazar'])->name('rechazar');
 
                 Route::post('/{id}/pagar', [AdelantoController::class, 'pagar'])->name('pagar');
-
-                    
+               
+                     
 
                 });
                 Route::get( '/adelantos/{id}/imprimir', [AdelantoController::class, 'imprimir']
@@ -336,11 +361,13 @@ Route::prefix('empleados/{empleado}')
 
 
 // rutas para prendas y tallas
-
+                Route::get('/tipos-prenda/exportar-empleados', [TipoPrendaController::class, 'exportarEmpleados'])
+                    ->name('tipos-prenda.exportar-empleados');
+              
                 Route::resource('tipos-prenda', TipoPrendaController::class);
                 Route::resource('tipos-prenda-talles', TipoPrendaTalleController::class);
-
-
+           
+             
 
         // ruta asistencia
 
@@ -381,6 +408,8 @@ Route::prefix('empleados/{empleado}')
 
                         // roster rutas
                 Route::resource('rosters', RosterController::class);
+
+              
         });
 
      /* ======================================================
@@ -392,7 +421,9 @@ Route::prefix('empleados/{empleado}')
             ->middleware(['role:documentacion'])
             ->group(function () {
 
-
+ Route::get('viaticos/reportes', [ViaticoReporteController::class, 'index'])
+            ->name('viaticos.reportes');   
+            
         Route::get('/viaticos/{id}/json', [ViaticoController::class, 'json'])
             ->name('documentacion.viaticos.json');
     
@@ -415,6 +446,12 @@ Route::prefix('empleados/{empleado}')
 
         Route::get('viaticos/{id}/print-extension', [ViaticoController::class, 'printExtension'])
             ->name('viaticos.printExtension');
+
+
+
+            
+       
+
     });
 
 

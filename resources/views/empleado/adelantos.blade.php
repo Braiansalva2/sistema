@@ -8,12 +8,38 @@
         <div class="card-body">
 
             <h5 class="mb-3">💰 Solicitar Adelanto</h5>
- <a href="{{ route('empleado.index') }}" class="btn btn-secondary btn-sm">Volver</a> <br>
+             <a href="{{ route('empleado.index') }}" class="btn btn-secondary btn-sm">Volver</a> <br>
+
+<br><br>
+
+                    <div class="alert alert-warning border-0 shadow-sm"
+                        style="border-radius:12px; background:#fff3cd;">
+
+                        <div class="d-flex align-items-start">
+                            <div class="me-2 fs-5">
+                                ⚠
+                            </div>
+
+                            <div>
+                                <strong>Importante</strong><br>
+
+                                Solo se permite una solicitud de adelanto por mes.
+
+                                <br>
+
+                                Para casos excepcionales deberá comunicarse con RRHH.
+                            </div>
+                        </div>
+                    </div>
+
+
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
-
-            <form method="POST" action="{{ route('empleado.adelantos.store') }}">
+@if(!$yaSolicitoEsteMes)
+  <form id="formAdelanto"
+      method="POST"
+      action="{{ route('empleado.adelantos.store') }}"> 
                 @csrf
 
                 <div class="row">
@@ -50,11 +76,41 @@
                     <textarea name="motivo" class="form-control" rows="2" placeholder="Opcional"></textarea>
                 </div>
 
-                <button class="btn btn-primary w-100 mt-2" style="border-radius:10px;">
-                    Solicitar Adelanto
-                </button>
+                <button type="submit"
+                        class="btn btn-primary w-100 mt-2"
+                        id="btnEnviarAdelanto"
+                        style="border-radius:10px;">
+
+                    <span class="texto-btn">
+                        Solicitar Adelanto
+                    </span>
+
+                </button>   >
 
             </form>
+
+            @else
+
+<div class="alert alert-info border-0 shadow-sm mt-3"
+     style="border-radius:12px; background:#dbeafe; color:#1e3a8a;">
+
+    <div class="d-flex align-items-start">
+        <div class="me-2 fs-5">
+            ℹ
+        </div>
+
+        <div>
+            Ya realizaste una solicitud de adelanto este mes.
+
+            <br>
+
+            Si necesitás otro adelanto deberás comunicarte con RRHH.
+        </div>
+    </div>
+
+</div>
+
+@endif
         </div>
     </div>
 
@@ -69,10 +125,25 @@
             Ver todos los adelantos
         </a>
     @forelse($adelantos as $adelanto)
-        @php
-            $pagadas = $adelanto->movimientos->where('tipo', 'descuento')->count();
-            $restantes = $adelanto->cuotas_total - $pagadas;
-        @endphp
+      @php
+
+    $pagadas = $adelanto->cuotas
+        ->where('estado', 'pagada')
+        ->count();
+
+    $restantes = $adelanto->cuotas
+        ->where('estado', 'pendiente')
+        ->count();
+
+    $montoPendiente = $adelanto->cuotas
+        ->where('estado', 'pendiente')
+        ->sum('monto');
+
+    $porcentaje = $adelanto->cuotas_total > 0
+        ? ($pagadas / $adelanto->cuotas_total) * 100
+        : 0;
+
+@endphp
 
         <div class="card border-0 shadow-sm mb-2" style="border-radius:12px;">
             <div class="card-body">
@@ -95,23 +166,72 @@
                             <span class="badge bg-danger">Rechazado</span>
                         @elseif($adelanto->estado == 'pagado')
                             <span class="badge bg-primary">Pagado</span>
+                        @elseif($adelanto->estado == 'saldado')
+                            <span class="badge bg-success">
+                                ✔ Saldado
+                            </span>
                         @endif
                     </div>
                 </div>
 
-                <small class="text-muted d-block">
-                    Cuotas: {{ $pagadas }} / {{ $adelanto->cuotas_total }}
-                </small>
+              <div class="mt-2">
 
-                @if($restantes > 0)
-                    <small class="text-danger d-block">
-                        Restan {{ $restantes }} cuotas
-                    </small>
-                @else
-                    <small class="text-success d-block">
-                        ✔ Adelanto saldado
-                    </small>
-                @endif
+    <small class="text-muted d-block">
+
+        Cuotas pagadas:
+        <strong>
+
+            {{ $pagadas }}
+
+        </strong>
+
+        / {{ $adelanto->cuotas_total }}
+
+    </small>
+
+    @if($restantes > 0)
+
+        <small class="text-danger d-block fw-semibold">
+
+            Restan
+            {{ $restantes }}
+            cuota(s)
+
+        </small>
+
+        <small class="text-muted d-block">
+
+            Debe:
+            <strong>
+
+                ${{ number_format($montoPendiente, 0, ',', '.') }}
+
+            </strong>
+
+        </small>
+
+    @else
+
+        <small class="text-success d-block fw-bold">
+
+            ✔ Adelanto completamente saldado
+
+        </small>
+
+    @endif
+
+    {{-- BARRA PROGRESO --}}
+    <div class="progress mt-2"
+         style="height:8px; border-radius:10px;">
+
+        <div class="progress-bar bg-success"
+             style="width: {{ $porcentaje }}%">
+
+        </div>
+
+    </div>
+
+</div>
             </div>
         </div>
     @empty
@@ -124,4 +244,33 @@
 
 </div>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulario = document.getElementById('formAdelanto');
+    const boton = document.getElementById('btnEnviarAdelanto');
+
+    // verificar existencia
+    if (!formulario || !boton) {
+        return;
+    }
+
+    formulario.addEventListener('submit', function () {
+
+        // bloquear botón
+        boton.disabled = true;
+
+        // mostrar carga
+        boton.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Enviando solicitud...
+        `;
+
+    });  
+
+});
+</script>   
 @endsection

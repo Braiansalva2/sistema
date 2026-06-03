@@ -164,9 +164,20 @@
     <div class="modal-content">
 
       <div class="modal-header">
-        <h5 class="modal-title">Editar talles</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
+            <h5 class="modal-title">Editar talles</h5>
+
+            <div class="d-flex align-items-center gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-outline-info rounded-pill"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalReferenciaTalles">
+                    📏 Referencia de talles
+                </button>
+
+                <button class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+    </div>
 
       <form method="POST" action="{{ route('empleado.talles.guardar') }}">
         @csrf
@@ -182,7 +193,7 @@
                 <div class="mb-3">
                     <label class="form-label fw-bold">{{ $tipo->nombre }}</label>
 
-                    <select name="talles[{{ $tipo->id }}]" class="form-select">
+                    <select name="talles[{{ $tipo->id }}]" class="form-select"  required>
 
                         <option value="">Seleccionar</option>
 
@@ -202,7 +213,11 @@
 
         <div class="modal-footer">
             <button class="btn btn-primary">Guardar</button>
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+           <button type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                Cancelar
+            </button>
         </div>
 
       </form>
@@ -222,4 +237,81 @@
 
 </div>
 
+
+
+{{-- MODAL REFERENCIA DE TALLES --}}
+<div class="modal fade"
+     id="modalReferenciaTalles"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+
+        <div class="modal-content border-0 rounded-4 shadow">
+
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold">
+                    📏 Guía orientativa de talles
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="alert alert-info rounded-4">
+                    Los talles son orientativos y pueden variar según la marca y el fabricante.
+                    Se recomienda tomar como referencia una prenda que el empleado use actualmente.
+                </div>
+
+                <h6 class="fw-bold mt-4">👕 Remeras / Camisas</h6>
+                <ul>
+                    <li>S → 42 cm hombro a hombro</li>
+                    <li>M → 44 cm hombro a hombro</li>
+                    <li>L → 46 cm hombro a hombro</li>
+                    <li>XL → 48 cm hombro a hombro</li>
+                    <li>XXL → 50 cm hombro a hombro</li>
+                </ul>
+
+                <h6 class="fw-bold mt-4">👖 Pantalones</h6>
+                <ul>
+                    <li>38 → 76 cm de cintura</li>
+                    <li>40 → 80 cm de cintura</li>
+                    <li>42 → 84 cm de cintura</li>
+                    <li>44 → 88 cm de cintura</li>
+                    <li>46 → 92 cm de cintura</li>
+                </ul>
+
+                <h6 class="fw-bold mt-4">👢 Calzado</h6>
+                <ul>
+                    <li>40 → 26 cm de plantilla</li>
+                    <li>41 → 26.5 cm</li>
+                    <li>42 → 27 cm</li>
+                    <li>43 → 27.5 cm</li>
+                    <li>44 → 28 cm</li>
+                </ul>
+
+                <h6 class="fw-bold mt-4">🧥 Camperas</h6>
+                <ul>
+                    <li>M → 100 cm de contorno de pecho</li>
+                    <li>L → 108 cm</li>
+                    <li>XL → 116 cm</li>
+                    <li>XXL → 124 cm</li>
+                </ul>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 @endsection

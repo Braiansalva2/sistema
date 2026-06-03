@@ -106,10 +106,17 @@
                     </li>
 
                     <!-- FUTURO -->
-                    <li class="nav-item mb-2">
-                        <a href="#" class="nav-link text-white hover-link">
-                            📂 Documentos
+                  <li class="nav-item mb-2">
+
+                        <a href="{{ route('documentacion.viaticos.reportes') }}"
+                        class="nav-link text-white hover-link">
+
+                            <i class="bi bi-bar-chart-fill me-2"></i>
+
+                            Estadísticas
+
                         </a>
+
                     </li>
 
                     <hr class="text-light">
@@ -146,6 +153,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 </body>
 </html>

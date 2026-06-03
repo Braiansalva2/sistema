@@ -21,8 +21,7 @@
                     : []
             );
         @endphp
-
-        <select name="empleado_ids[]"
+       <select name="empleado_ids[]"
                 class="form-select"
                 multiple
                 size="10"
