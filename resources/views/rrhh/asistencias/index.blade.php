@@ -14,7 +14,7 @@
             </h2>
 
             <small class="text-muted">
-                {{ now()->format('d/m/Y') }}
+              {{ $fecha->format('d/m/Y') }}
             </small>
         </div>
 
@@ -45,70 +45,130 @@
     </button>
 
 </div>
-    {{-- MÉTRICAS --}}
-    <div class="row g-3 mb-4">
+
+
+<form method="GET" action="{{ route('rrhh.asistencias.index') }}" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <div class="row g-3 align-items-end">
 
         <div class="col-md-3">
-            <div class="card shadow border-0 rounded-4 bg-success text-white">
-
-                <div class="card-body">
-
-                    <h6>Presentes</h6>
-
-                    <h2 class="fw-bold">
-                        {{ $presentes }}
-                    </h2>
-
-                </div>
-            </div>
+            <label class="form-label">Fecha</label>
+            <input type="date"
+                   name="fecha"
+                   class="form-control"
+                   value="{{ $fecha->toDateString() }}">
         </div>
 
         <div class="col-md-3">
-            <div class="card shadow border-0 rounded-4 bg-danger text-white">
-
-                <div class="card-body">
-
-                    <h6>Ausentes</h6>
-
-                    <h2 class="fw-bold">
-                        {{ $ausentes }}
-                    </h2>
-
-                </div>
-            </div>
+            <label class="form-label">Estado</label>
+            <select name="estado" class="form-select">
+                <option value="todos" {{ $estadoFiltro == 'todos' ? 'selected' : '' }}>Todos</option>
+                <option value="presentes" {{ $estadoFiltro == 'presentes' ? 'selected' : '' }}>Presentes</option>
+                <option value="ausentes" {{ $estadoFiltro == 'ausentes' ? 'selected' : '' }}>Ausentes</option>
+                <option value="abiertas" {{ $estadoFiltro == 'abiertas' ? 'selected' : '' }}>Jornada abierta</option>
+                <option value="cerradas" {{ $estadoFiltro == 'cerradas' ? 'selected' : '' }}>Jornada cerrada</option>
+                <option value="fuera_rango" {{ $estadoFiltro == 'fuera_rango' ? 'selected' : '' }}>Fuera de rango</option>
+                <option value="sin_gps" {{ $estadoFiltro == 'sin_gps' ? 'selected' : '' }}>Sin GPS</option>
+            </select>
         </div>
 
         <div class="col-md-3">
-            <div class="card shadow border-0 rounded-4 bg-warning text-dark">
-
-                <div class="card-body">
-
-                    <h6>Jornadas abiertas</h6>
-
-                    <h2 class="fw-bold">
-                        {{ $abiertas }}
-                    </h2>
-
-                </div>
-            </div>
+            <label class="form-label">Empleado</label>
+            <input type="text"
+                   name="buscar"
+                   class="form-control"
+                   placeholder="Nombre, apellido o DNI"
+                   value="{{ $buscar }}">
         </div>
 
-        <div class="col-md-3">
-            <div class="card shadow border-0 rounded-4 bg-primary text-white">
-
-                <div class="card-body">
-
-                    <h6>Jornadas cerradas</h6>
-
-                    <h2 class="fw-bold">
-                        {{ $cerradas }}
-                    </h2>
-
-                </div>
-            </div>
+        <div class="col-md-2">
+            <label class="form-label">Por página</label>
+            <select name="por_pagina" class="form-select">
+                <option value="12" {{ $porPagina == 12 ? 'selected' : '' }}>12</option>
+                <option value="24" {{ $porPagina == 24 ? 'selected' : '' }}>24</option>
+                <option value="50" {{ $porPagina == 50 ? 'selected' : '' }}>50</option>
+                <option value="100" {{ $porPagina == 100 ? 'selected' : '' }}>100</option>
+            </select>
         </div>
 
+        <div class="col-md-1">
+            <button class="btn btn-primary w-100">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ route('rrhh.asistencias.index') }}"
+            class="btn btn-secondary w-100">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                Limpiar
+                
+            </a>
+        </div>
     </div>
+</form>
+    {{-- MÉTRICAS --}}
+<div class="row g-2 mb-4">
+
+    <div class="col">
+        <div class="card border-0 bg-success text-white shadow-sm">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-person-check-fill fs-5"></i>
+                <h4 class="mb-0">{{ $presentes }}</h4>
+                <small>Presentes</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 bg-danger text-white shadow-sm">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-person-x-fill fs-5"></i>
+                <h4 class="mb-0">{{ $ausentes }}</h4>
+                <small>Ausentes</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 bg-warning shadow-sm">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-clock-history fs-5"></i>
+                <h4 class="mb-0">{{ $abiertas }}</h4>
+                <small>Abiertas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 bg-primary text-white shadow-sm">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-check-circle-fill fs-5"></i>
+                <h4 class="mb-0">{{ $cerradas }}</h4>
+                <small>Cerradas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 bg-orange text-white shadow-sm" style="background:#fd7e14;">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-geo-alt-fill fs-5"></i>
+                <h4 class="mb-0">{{ $fueraRango }}</h4>
+                <small>Fuera rango</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 bg-dark text-white shadow-sm">
+            <div class="card-body text-center py-2">
+                <i class="bi bi-wifi-off fs-5"></i>
+                <h4 class="mb-0">{{ $sinGps }}</h4>
+                <small>Sin GPS</small>
+            </div>
+        </div>
+    </div>
+
+</div>
 
     {{-- TARJETAS --}}
     <div class="row">
@@ -148,8 +208,52 @@
 
                         </div>
 
-                        {{-- ESTADO --}}
-                        @if($item['estado'] == 'ausente')
+                        
+                      {{-- ESTADO --}}
+  @if($item['estado'] == 'viaje')
+    <div class="alert alert-primary py-2">
+
+        <div class="fw-bold">
+            <i class="bi bi-truck"></i>
+            En viaje
+        </div>
+
+        <small class="d-block mt-1">
+            <i class="bi bi-calendar-event"></i>
+            Inicio:
+            {{ optional($item['inicio_viaje'])->format('d/m/Y H:i') }}
+        </small>
+
+        @if($item['fin_viaje'])
+
+            <small class="d-block text-success">
+                <i class="bi bi-check-circle-fill"></i>
+                Finalizó:
+                {{ $item['fin_viaje']->format('d/m/Y H:i') }}
+            </small>
+
+        @endif
+
+        @if($item['vehiculo'])
+            <small class="d-block">
+                <i class="bi bi-truck-front"></i>
+                Vehículo:
+                {{ $item['vehiculo'] }}
+            </small>
+        @endif
+
+        @if($item['origen'])
+            <small class="d-block">
+                <i class="bi bi-geo-alt"></i>
+                {{ $item['origen'] }}
+                →
+                {{ $item['destino'] }}
+            </small>
+        @endif
+
+    </div>
+
+                        @elseif($item['estado'] == 'ausente')
 
                             <div class="alert alert-danger py-2">
                                 ❌ Ausente
@@ -161,7 +265,7 @@
                                 🟡 Jornada abierta
                             </div>
 
-                        @else
+                        @elseif($item['estado'] == 'jornada_cerrada')
 
                             <div class="alert alert-success py-2">
                                 ✅ Jornada cerrada
@@ -305,6 +409,8 @@
 
 @foreach($asistencias as $item)
 
+
+
     @php
         $ultimoMovimiento = $item['movimientos']->last();
     @endphp
@@ -430,6 +536,23 @@
     @endif
 
 @endforeach
+<div class="d-flex justify-content-between align-items-center mt-4">
+
+    <div class="text-muted small">
+        Mostrando
+        <strong>{{ $empleados->firstItem() }}</strong>
+        -
+        <strong>{{ $empleados->lastItem() }}</strong>
+        de
+        <strong>{{ $empleados->total() }}</strong>
+        empleados
+    </div>
+
+    <div>
+        {{ $empleados->links() }}
+    </div>
+
+</div>
 
 
 <div class="modal fade" id="modalExportarMatriz" tabindex="-1">

@@ -7,102 +7,274 @@ use Illuminate\Http\Request;
 
 use App\Models\Empleado;
 use App\Models\Licencia;
+use App\Models\EventoOperativo;
 use App\Models\MovimientoAsistencia;
 use Carbon\Carbon;
 
 class AsistenciaController extends Controller
 {
-    public function index()
-    {
-    // MES Y AÑO ACTUAL
-    $mes = now()->month;
-    $anio = now()->year;
-        // EMPLEADOS ACTIVOS
-        $empleados = Empleado::where('estado', 'Activo')
-            ->get();
+   public function index(Request $request)
+{
+    $fecha = $request->filled('fecha')
+        ? Carbon::parse($request->fecha)
+        : today();
 
-        $asistencias = [];
+    $estadoFiltro = $request->get('estado', 'todos');
+    $buscar = trim($request->get('buscar', ''));
+    $porPagina = (int) $request->get('por_pagina', 12);
 
-        foreach ($empleados as $empleado) {
+    $porPagina = in_array($porPagina, [12, 24, 50, 100], true)
+        ? $porPagina
+        : 12;
 
-            // MOVIMIENTOS DEL DÍA
-            $movimientosHoy = MovimientoAsistencia::where('empleado_id', $empleado->id)
-                ->whereDate('fecha_hora', today())
-                ->orderBy('fecha_hora', 'asc')
-                ->get();
+    $mes = $fecha->month;
+    $anio = $fecha->year;
 
-            // ÚLTIMO MOVIMIENTO
-            $ultimoMovimiento = $movimientosHoy->last();
+    $empleadosQuery = Empleado::where('estado', 'Activo')
+        ->when($buscar !== '', function ($query) use ($buscar) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('apellido', 'like', '%' . $buscar . '%')
+                    ->orWhere('dni', 'like', '%' . $buscar . '%');
+            });
+        })
+        ->orderBy('apellido')
+        ->orderBy('nombre');
+/*
+|--------------------------------------------------------------------------
+| EMPLEADOS PARA MÉTRICAS (TODOS)
+|--------------------------------------------------------------------------
+*/
 
-            // ENTRADA
-            $entrada = $movimientosHoy
-                ->where('tipo', 'entrada')
-                ->first();
+$empleadosMetricas = (clone $empleadosQuery)->get();
 
-            // SALIDA
-            $salida = $movimientosHoy
-                ->where('tipo', 'salida')
-                ->last();
+$movimientosMetricas = MovimientoAsistencia::whereDate('fecha_hora', $fecha)
+    ->whereIn('empleado_id', $empleadosMetricas->pluck('id'))
+    ->orderBy('fecha_hora')
+    ->get()
+    ->groupBy('empleado_id');
 
-            // ESTADO
-            $estado = 'ausente';
+$asistenciasMetricas = $this->construirAsistencias(
+    $empleadosMetricas,
+    $movimientosMetricas,
+    $fecha
+);
 
-            if ($movimientosHoy->count() > 0) {
+/*
+|--------------------------------------------------------------------------
+| EMPLEADOS PAGINADOS (CARDS)
+|--------------------------------------------------------------------------
+*/
 
-                if ($ultimoMovimiento && $ultimoMovimiento->tipo == 'entrada') {
+$empleados = $empleadosQuery
+    ->paginate($porPagina)
+    ->appends($request->query());
 
-                    $estado = 'jornada_abierta';
+$movimientosPorEmpleado = MovimientoAsistencia::whereDate('fecha_hora', $fecha)
+    ->whereIn('empleado_id', $empleados->pluck('id'))
+    ->orderBy('fecha_hora')
+    ->get()
+    ->groupBy('empleado_id');
 
-                } else {
+$asistencias = $this->construirAsistencias(
+    $empleados,
+    $movimientosPorEmpleado,
+    $fecha
+);
+  
 
-                    $estado = 'jornada_cerrada';
-                }
+    if ($estadoFiltro !== 'todos') {
+        $asistencias = $asistencias->filter(function ($item) use ($estadoFiltro) {
+            if ($estadoFiltro === 'presentes') {
+                return $item['estado'] !== 'ausente';
             }
 
-            $asistencias[] = [
+            if ($estadoFiltro === 'ausentes') {
+                return $item['estado'] === 'ausente';
+            }
 
-                'empleado' => $empleado,
+            if ($estadoFiltro === 'abiertas') {
+                return $item['estado'] === 'jornada_abierta';
+            }
 
-                'movimientos' => $movimientosHoy,
+            if ($estadoFiltro === 'cerradas') {
+                return $item['estado'] === 'jornada_cerrada';
+            }
 
-                'ultimo_movimiento' => $ultimoMovimiento,
+            if ($estadoFiltro === 'fuera_rango') {
+                return $item['fuera_rango'];
+            }
 
-                'entrada' => $entrada,
+            if ($estadoFiltro === 'sin_gps') {
+                return $item['sin_gps'];
+            }
 
-                'salida' => $salida,
-
-                'estado' => $estado,
-                
-            ];
-        }
-
-        // MÉTRICAS
-        $presentes = collect($asistencias)
-            ->where('estado', '!=', 'ausente')
-            ->count();
-
-        $ausentes = collect($asistencias)
-            ->where('estado', 'ausente')
-            ->count();
-
-        $abiertas = collect($asistencias)
-            ->where('estado', 'jornada_abierta')
-            ->count();
-
-        $cerradas = collect($asistencias)
-            ->where('estado', 'jornada_cerrada')
-            ->count();
-
-        return view('rrhh.asistencias.index', compact(
-            'asistencias',
-            'presentes',
-            'ausentes',
-            'abiertas',
-            'cerradas',
-            'mes',
-            'anio'
-        ));
+            return true;
+        })->values();
     }
+
+   $presentes = $asistenciasMetricas
+    ->where('estado', '!=', 'ausente')
+    ->count();
+
+$ausentes = $asistenciasMetricas
+    ->where('estado', 'ausente')
+    ->count();
+
+$abiertas = $asistenciasMetricas
+    ->where('estado', 'jornada_abierta')
+    ->count();
+
+$cerradas = $asistenciasMetricas
+    ->where('estado', 'jornada_cerrada')
+    ->count();
+
+$fueraRango = $asistenciasMetricas
+    ->where('fuera_rango', true)
+    ->count();
+
+$sinGps = $asistenciasMetricas
+    ->where('sin_gps', true)
+    ->count();
+
+    return view('rrhh.asistencias.index', compact(
+        'asistencias',
+        'empleados',
+        'presentes',
+        'ausentes',
+        'abiertas',
+        'cerradas',
+        'fueraRango',
+        'sinGps',
+        'mes',
+        'anio',
+        'fecha',
+        'estadoFiltro',
+        'buscar',
+        'porPagina'
+    ));
+}
+
+
+private function construirAsistencias($empleados, $movimientosPorEmpleado, $fecha)
+{
+    $asistencias = collect();
+
+    foreach ($empleados as $empleado) {
+
+        $movimientosHoy = $movimientosPorEmpleado->get($empleado->id, collect());
+
+        $ultimoMovimiento = $movimientosHoy->last();
+
+        $entrada = $movimientosHoy
+            ->where('tipo', 'entrada')
+            ->first();
+
+        $salida = $movimientosHoy
+            ->where('tipo', 'salida')
+            ->last();
+
+        $estado = 'ausente';
+
+
+
+// VERIFICAR SI EL EMPLEADO ESTABA DE VIAJE
+// EN LA FECHA SELECCIONADA
+// (Soporta viajes de varios días)
+// ======================================
+
+$inicioDia = $fecha->copy()->startOfDay();
+$finDia = $fecha->copy()->endOfDay();
+
+// Último inicio antes o durante el día consultado
+$inicioViaje = EventoOperativo::where('empleado_id', $empleado->id)
+    ->where('tipo_evento', 'inicio_jornada')
+    ->where('fecha_hora', '<=', $finDia)
+    ->orderByDesc('fecha_hora')
+    ->first();
+
+$finViaje = null;
+$enViaje = false;
+
+if ($inicioViaje) {
+
+    // Primer fin posterior a ese inicio
+    $finViaje = EventoOperativo::where('empleado_id', $empleado->id)
+        ->where('tipo_evento', 'fin_jornada')
+        ->where('fecha_hora', '>', $inicioViaje->fecha_hora)
+        ->orderBy('fecha_hora')
+        ->first();
+
+    /*
+    Está de viaje si:
+
+    - nunca terminó el viaje
+
+    o
+
+    - el viaje terminó después del día consultado
+    */
+
+    if (!$finViaje || $finViaje->fecha_hora >= $inicioDia) {
+        $enViaje = true;
+    }
+}
+
+        if ($movimientosHoy->count() > 0) {
+
+            if ($ultimoMovimiento && $ultimoMovimiento->tipo == 'entrada') {
+                $estado = 'jornada_abierta';
+            } else {
+                $estado = 'jornada_cerrada';
+            }
+
+        }
+            // Si tiene un viaje abierto, prevalece ese estado
+            if ($enViaje) {
+                $estado = 'viaje';
+            }
+        $fueraRango = $ultimoMovimiento &&
+            $ultimoMovimiento->estado_gps == 'fuera_de_zona';
+
+        $sinGps = $ultimoMovimiento &&
+            $ultimoMovimiento->estado_gps != 'correcto' &&
+            $ultimoMovimiento->estado_gps != 'fuera_de_zona';
+
+       $asistencias->push([
+
+            'empleado' => $empleado,
+
+            'movimientos' => $movimientosHoy,
+
+            'ultimo_movimiento' => $ultimoMovimiento,
+
+            'entrada' => $entrada,  
+
+            'salida' => $salida,
+
+            'estado' => $estado,
+
+            'fuera_rango' => $fueraRango,
+
+            'sin_gps' => $sinGps,
+
+            'en_viaje' => $enViaje,
+
+            'inicio_viaje' => $inicioViaje ? $inicioViaje->fecha_hora : null,
+            
+            'fin_viaje' => $finViaje ? $finViaje->fecha_hora : null,
+
+            'origen' => $inicioViaje->origen ?? null,
+
+            'destino' => $inicioViaje->destino ?? null,
+
+            'vehiculo' => $inicioViaje->vehiculo ?? null,
+
+        ]);
+    }
+
+    return $asistencias;
+}
 
 public function matriz()
 {

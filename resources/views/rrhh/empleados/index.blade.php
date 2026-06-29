@@ -83,8 +83,13 @@
         </a>
     </div>
 
-    <!-- 🧩 Cards dinámicas -->
-    <div id="cards-container" class="row g-4"></div>
+    <!--  Cards dinámicas -->
+<!-- Cards dinámicas -->
+<div id="cards-container" class="row g-4"></div>
+
+<div id="paginacion-empleados" class="d-flex justify-content-center mt-4"></div>
+
+<div id="resumen-empleados" class="text-center text-muted mt-2"></div>
 
 </div>
 
@@ -114,179 +119,211 @@
 
         </div>
     </div>
-</div>
+</div>  
 
 @endsection
 
 
 @push('scripts')
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
+    const buscador = document.getElementById('buscador');
+    const cantidad = document.getElementById('cantidad');
+    const cardsContainer = document.getElementById('cards-container');
+    const paginacion = document.getElementById('paginacion-empleados');
+    const resumen = document.getElementById('resumen-empleados');
 
-    let tabla = $('#tabla-oculta').DataTable({
-        ajax: "{{ route('rrhh.empleados.json') }}",
-        pageLength: 12,
-        searching: true,
-        ordering: true,
-        paging: true,
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+    let temporizadorBusqueda;
 
-        columns: [
-            { data: 'apellido' },
-            { data: 'nombre' },
-            { data: 'dni' },
-            { data: 'rol' },
-            { data: 'obra' },
-            { data: 'banco' },
-            { data: 'contrato' },
-            { data: 'foto' },
-            { data: 'id' }
-        ],
+    function escaparHtml(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor ?? '';
+        return div.innerHTML;
+    }
 
-        drawCallback: function () {
-            renderCards(this.api().rows({ page:'current' }).data());
+    async function cargarEmpleados(pagina = 1) {
+        cardsContainer.innerHTML = `
+            <div class="col-12 text-center text-muted py-5">
+                Cargando empleados...
+            </div>
+        `;
+
+        const parametros = new URLSearchParams({
+            page: pagina,
+            por_pagina: cantidad.value,
+            buscar: buscador.value.trim()
+        });
+
+        const respuesta = await fetch("{{ route('rrhh.empleados.json') }}?" + parametros.toString(), {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const datos = await respuesta.json();
+
+        renderCards(datos.data);
+        renderPaginacion(datos);
+        renderResumen(datos);
+    }
+
+    function renderCards(empleados) {
+        cardsContainer.innerHTML = '';
+
+        if (!empleados || empleados.length === 0) {
+            cardsContainer.innerHTML = `
+                <div class="col-12 text-center text-muted py-5">
+                    No se encontraron empleados.
+                </div>
+            `;
+            return;
         }
-    });
 
-   
-    $('#buscador').on('keyup', function () {
-        tabla.search(this.value).draw();
-    });
+        empleados.forEach(function (e) {
+            const claseEstado = e.estado === 'Inactivo'
+                ? 'opacity-50 border border-dark'
+                : '';
 
-   
-    $('#cantidad').on('change', function () {
-        tabla.page.len(this.value).draw();
-    });
-
-});
-
-
-function renderCards(lista) {
-    let cont = $("#cards-container");
-    cont.empty();
-
-    lista.each(function (e) {
-
-        let claseEstado = (e.estado === "Inactivo")
-            ? "opacity-50 border border-dark"
-            : "";
-
-        let botonAccion = (e.estado === "Inactivo")
-            ? `<form action="/rrhh/empleados/${e.id}/reactivar" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <button class="btn btn-success btn-sm w-100 mt-1">
-                        Reactivar
-                    </button>
-               </form>`
-            : `<button onclick="abrirModalEliminar(${e.id})"
-                class="btn btn-danger btn-sm w-100 mt-1">Dar de baja</button>`;
-
-      let card = `
-<div class="col-sm-6 col-md-4 col-lg-3">
-    <div class="empleado-card shadow-sm p-3 h-100 text-center ${claseEstado}">
-
-        <img src="${e.foto}" class="empleado-foto mb-3">
-
-        <h5 class="fw-bold text-dark">${e.apellido}, ${e.nombre}</h5>
-        <small class="d-block mb-1"><strong>DNI:</strong> ${e.dni}</small>
-        <small class="d-block mb-1"><strong>Rol:</strong> ${e.rol}</small>
-
-        <a href="/rrhh/empleados/${e.id}" class="btn btn-secondary btn-sm w-100 mb-1">
-            <i class="bi bi-person-bounding-box"></i>
-            Ver perfil</a>
-        <a href="/rrhh/empleados/${e.id}/edit" class="btn btn-primary btn-sm w-100 mb-1"> 
-            <i class="bi bi-pencil-square"></i>
-            Editar</a>
-
-        <a href="/rrhh/empleados/${e.id}/legajos" 
-            class="btn btn-warning btn-sm w-100 mb-1">
-            <i class="bi bi-card-list"></i>
-            Legajos
-        </a>
-
-        <!-- MENU DESPLEGABLE -->
-        <div class="dropdown w-100 mb-1">
-            <button class="btn btn-dark btn-sm dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
-                Más opciones
-            </button>
-
-            <ul class="dropdown-menu w-100 p-2">
-
-                <!-- DESCANSOS -->
-                <li class="mb-1">
-                    <a class="btn btn-secondary btn-sm w-100" 
-                       href="/rrhh/empleados/${e.id}/descansos">
-                        <i class="bi bi-moon-stars me-1"></i> Descansos
-                    </a>
-                </li>
-
-
-
-                <!-- SUELDOS -->
-                <li class="mb-1">
-                    <a class="btn btn-success btn-sm w-100" 
-                       href="/rrhh/empleados/${e.id}/sueldos">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-currency-dollar" viewBox="0 0 16 16">
-                          <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.05zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73z"/>
-                       </svg> Sueldos
-                    </a>
-                </li>   
-
-                <!-- SANCIONES -->
-                <li class="mb-1">
-                    <a class="btn btn-warning btn-sm w-100" 
-                       href="/rrhh/empleados/${e.id}/sanciones">
-                        <i class="bi bi-exclamation-triangle me-1"></i> Sanciones
-                    </a>
-                </li>
-
-                <!-- VACACIONES -->
-                <li class="mb-1">
-                    <a class="btn btn-primary btn-sm w-100" 
-                       href="/rrhh/empleados/${e.id}/vacaciones">
-                        <i class="bi bi-sun me-1"></i> Vacaciones
-                    </a>
-                </li>
-
-                <!-- DAR DE BAJA O REACTIVAR -->
-                <li>
-                    ${
-                        e.estado === "Inactivo"
-                        ? `
-                        <form action="/rrhh/empleados/${e.id}/reactivar" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <button class="btn btn-success btn-sm w-100">
-                                <i class="bi bi-person-check-fill"></i> Reactivar
-                            </button>
-                        </form>
-                        `
-                        : `
-                        <button onclick="abrirModalEliminar(${e.id})"
-                            class="btn btn-danger btn-sm w-100">
-                            <i class="bi bi-person-x-fill"></i> Dar de baja
+            const botonEstado = e.estado === 'Inactivo'
+                ? `
+                    <form action="/rrhh/empleados/${e.id}/reactivar" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <button class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-person-check-fill"></i> Reactivar
                         </button>
-                        `
-                    }
-                </li>
+                    </form>
+                `
+                : `
+                    <button type="button" onclick="abrirModalEliminar(${e.id})"
+                        class="btn btn-danger btn-sm w-100">
+                        <i class="bi bi-person-x-fill"></i> Dar de baja
+                    </button>
+                `;
 
-            </ul>
-        </div>
+            cardsContainer.insertAdjacentHTML('beforeend', `
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="empleado-card shadow-sm p-3 h-100 text-center ${claseEstado}">
 
-    </div>
-</div>
-`;
+                        <img src="${escaparHtml(e.foto)}" class="empleado-foto mb-3">
 
+                        <h5 class="fw-bold text-dark">
+                            ${escaparHtml(e.apellido)}, ${escaparHtml(e.nombre)}
+                        </h5>
 
-        cont.append(card);
+                        <small class="d-block mb-1"><strong>DNI:</strong> ${escaparHtml(e.dni)}</small>
+                        <small class="d-block mb-1"><strong>Rol:</strong> ${escaparHtml(e.rol)}</small>
+
+                        <a href="/rrhh/empleados/${e.id}" class="btn btn-secondary btn-sm w-100 mb-1">
+                            <i class="bi bi-person-bounding-box"></i> Ver perfil
+                        </a>
+
+                        <a href="/rrhh/empleados/${e.id}/edit" class="btn btn-primary btn-sm w-100 mb-1">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+                        <a href="/rrhh/empleados/${e.id}/legajos" class="btn btn-warning btn-sm w-100 mb-1">
+                            <i class="bi bi-card-list"></i> Legajos
+                        </a>
+
+                        <div class="dropdown w-100 mb-1">
+                            <button class="btn btn-dark btn-sm dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                                Más opciones
+                            </button>
+
+                            <ul class="dropdown-menu w-100 p-2">
+                                <li class="mb-1">
+                                    <a class="btn btn-secondary btn-sm w-100" href="/rrhh/empleados/${e.id}/descansos">
+                                        <i class="bi bi-moon-stars me-1"></i> Descansos
+                                    </a>
+                                </li>
+
+                                <li class="mb-1">
+                                    <a class="btn btn-success btn-sm w-100" href="/rrhh/empleados/${e.id}/sueldos">
+                                        <i class="bi bi-currency-dollar"></i> Sueldos
+                                    </a>
+                                </li>
+
+                                <li class="mb-1">
+                                    <a class="btn btn-warning btn-sm w-100" href="/rrhh/empleados/${e.id}/sanciones">
+                                        <i class="bi bi-exclamation-triangle me-1"></i> Sanciones
+                                    </a>
+                                </li>
+
+                                <li class="mb-1">
+                                    <a class="btn btn-primary btn-sm w-100" href="/rrhh/empleados/${e.id}/vacaciones">
+                                        <i class="bi bi-sun me-1"></i> Vacaciones
+                                    </a>
+                                </li>
+
+                                <li>${botonEstado}</li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    function renderPaginacion(datos) {
+        paginacion.innerHTML = '';
+
+        if (datos.last_page <= 1) {
+            return;
+        }
+
+        paginacion.innerHTML = `
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item ${datos.current_page === 1 ? 'disabled' : ''}">
+                        <button class="page-link" type="button" data-page="${datos.current_page - 1}">
+                            Anterior
+                        </button>
+                    </li>
+
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Página ${datos.current_page} de ${datos.last_page}
+                        </span>
+                    </li>
+
+                    <li class="page-item ${datos.current_page === datos.last_page ? 'disabled' : ''}">
+                        <button class="page-link" type="button" data-page="${datos.current_page + 1}">
+                            Siguiente
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        `;
+
+        paginacion.querySelectorAll('button[data-page]').forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                cargarEmpleados(this.dataset.page);
+            });
+        });
+    }
+
+    function renderResumen(datos) {
+        resumen.textContent = datos.total > 0
+            ? `Mostrando ${datos.from} a ${datos.to} de ${datos.total} empleados`
+            : '';
+    }
+
+    buscador.addEventListener('input', function () {
+        clearTimeout(temporizadorBusqueda);
+
+        temporizadorBusqueda = setTimeout(function () {
+            cargarEmpleados(1);
+        }, 350);
     });
-}
 
+    cantidad.addEventListener('change', function () {
+        cargarEmpleados(1);
+    });
+
+    cargarEmpleados(1);
+});
 
 function abrirModalEliminar(id) {
     let url = "{{ route('rrhh.empleados.destroy', ':id') }}".replace(':id', id);
@@ -295,8 +332,4 @@ function abrirModalEliminar(id) {
     new bootstrap.Modal(document.getElementById('modalEliminar')).show();
 }
 </script>
-
-<!-- Tabla invisible -->
-<table id="tabla-oculta" class="d-none"></table>
-
 @endpush

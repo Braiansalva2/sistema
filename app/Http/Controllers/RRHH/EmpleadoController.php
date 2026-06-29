@@ -36,32 +36,60 @@ class EmpleadoController extends Controller
     /**
      * DATA EN JSON PARA LAS CARDS + DATATABLE
      */
-    public function data()
-    {
-        $empleados = Empleado::with(['banco', 'obraSocial', 'rolPuesto', 'contrato'])
-            ->get(); // 👈 Trae activos e inactivos
+   public function data(Request $request)
+{
+    $porPagina = (int) $request->input('por_pagina', 12);
 
-        $empleados = $empleados->map(function ($e) {
+    // Solo permitimos valores definidos en el selector.
+    $porPagina = in_array($porPagina, [8, 12, 20, 50], true)
+        ? $porPagina
+        : 12;
 
-            return [
-                'id' => $e->id,
-                'nombre' => $e->nombre,
-                'apellido' => $e->apellido,
-                'dni' => $e->dni,
-                'rol' => $e->rolPuesto->nombre_puesto ?? '-',
-                'obra' => $e->obraSocial->nombre ?? '-',
-                'banco' => $e->banco->nombre_banco ?? '-',
-                'contrato' => $e->contrato->tipo_contrato ?? '-',
-                'estado' => $e->estado, 
+    $buscar = trim((string) $request->input('buscar', ''));
 
-                'foto' => $e->foto_perfil
-                    ? Storage::url('fotos_empleados/' . $e->foto_perfil)
-                    : asset('img/default-user.png'),
-            ];
-        });
+    $empleados = Empleado::query()
+        ->with([
+            'banco:id,nombre_banco',
+            'obraSocial:id,nombre',
+            'rolPuesto:id,nombre_puesto',
+            'contrato:id,tipo_contrato',
+        ])
+        ->when($buscar !== '', function ($query) use ($buscar) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('apellido', 'like', '%' . $buscar . '%')
+                    ->orWhere('dni', 'like', '%' . $buscar . '%')
+                    ->orWhereHas('rolPuesto', function ($rolQuery) use ($buscar) {
+                        $rolQuery->where('nombre_puesto', 'like', '%' . $buscar . '%');
+                    })
+                    ->orWhereHas('obraSocial', function ($obraQuery) use ($buscar) {
+                        $obraQuery->where('nombre', 'like', '%' . $buscar . '%');
+                    });
+            });
+        })
+        ->orderBy('apellido')
+        ->orderBy('nombre')
+        ->paginate($porPagina);
 
-        return response()->json(['data' => $empleados]);
-    }
+    $empleados->getCollection()->transform(function (Empleado $e) {
+        return [
+            'id' => $e->id,
+            'nombre' => $e->nombre,
+            'apellido' => $e->apellido,
+            'dni' => $e->dni,
+            'rol' => optional($e->rolPuesto)->nombre_puesto ?? '-',
+            'obra' => optional($e->obraSocial)->nombre ?? '-',
+            'banco' => optional($e->banco)->nombre_banco ?? '-',
+            'contrato' => optional($e->contrato)->tipo_contrato ?? '-',
+            'estado' => $e->estado,
+            'foto' => $e->foto_perfil
+                ? Storage::url('fotos_empleados/' . $e->foto_perfil)
+                : asset('img/default-user.png'),
+        ];
+    });
+
+    return response()->json($empleados);
+}
 
 
     /**

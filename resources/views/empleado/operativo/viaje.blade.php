@@ -184,7 +184,40 @@
 
     {{-- 🔵 ESTADO: NO INICIÓ --}}
     @if(!$ultimo || $ultimo->tipo_evento == 'fin_jornada')
+<div class="alert alert-info border-0 shadow-sm text-start mb-3">
+    <h6 class="fw-bold mb-2">
+        <i class="bi bi-info-circle-fill"></i>
+        Importante antes de iniciar el viaje
+    </h6>
 
+    <ul class="mb-2">
+        <li>
+            En <strong>Vehículo</strong> debe ingresar el <strong>código interno</strong> de la unidad.
+        </li>
+        <li>
+            En <strong>Origen</strong> indique el lugar desde donde inicia el viaje.
+        </li>
+        <li>
+            En <strong>Destino</strong> indique el lugar hacia donde se dirige.
+        </li>
+    </ul>
+
+    <div class="small">
+        <strong>Ejemplos de códigos internos:</strong><br>
+        🚙 Camionetas: <strong>C1, C2, C3...</strong><br>
+        🚛 Camiones: <strong>CM1, CM2, CM3...</strong><br>
+        🚚 Semirremolques: <strong>S1, S2, S3...</strong>
+    </div>
+
+    <hr class="my-2">
+
+    <div class="small">
+        <strong>Ejemplo de carga:</strong><br>
+        <strong>Vehículo:</strong> C2<br>
+        <strong>Origen:</strong> Salta Capital<br>
+        <strong>Destino:</strong> San Antonio de los Cobres
+    </div>
+</div>
         <div class="card p-3 shadow-sm mb-3">
             <h6 class="mb-3">Datos del viaje</h6>
                     <form method="POST" action="{{ route('empleado.operativo.iniciar') }}" id="formIniciar">

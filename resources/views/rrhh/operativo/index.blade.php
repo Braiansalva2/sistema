@@ -228,19 +228,19 @@
 
                                     <div class="tracking-point" style="left: {{ $pos }}%;">
 
-    <div class="tracking-dot active"></div>
+                        <div class="tracking-dot active"></div>
 
-    {{-- TEXTO CORTO --}}
-    <div class="tracking-label">
-        {{ Str::limit($r->lugar, 12) }}
-    </div>
+                        {{-- TEXTO CORTO --}}
+                        <div class="tracking-label">
+                            {{ Str::limit($r->lugar, 12) }}
+                        </div>
 
-    {{-- TOOLTIP COMPLETO --}}
-    <div class="tooltip-custom">
-        {{ $r->lugar ?? 'Sin ubicación' }}
-    </div>
+                        {{-- TOOLTIP COMPLETO --}}
+                        <div class="tooltip-custom">
+                            {{ $r->lugar ?? 'Sin ubicación' }}
+                        </div>
 
-</div>
+                    </div>
 
                                 @endforeach
 
@@ -261,10 +261,17 @@
                                 {{ $ultimo->lugar ?? 'Sin ubicación' }}
                             </span>
 
-                            <span>
-                                <i class="bi bi-clock"></i>
-                                {{ $ultimo->fecha_hora->format('H:i') }}
-                            </span>
+                         <small class="text-muted d-block" style="font-size:12px;">
+                            <i class="bi bi-calendar-event"></i>
+                            Inicio de viaje:
+                            {{ optional($inicio?->fecha_hora)->format('d/m/Y H:i') ?? 'Sin fecha de inicio' }}
+                        </small>
+
+                        <small class="text-muted d-block" style="font-size:12px;">
+                            <i class="bi bi-clock-history"></i>
+                            Último reporte:
+                            {{ optional($ultimo?->fecha_hora)->format('d/m/Y H:i') ?? 'Sin reportes' }}
+                        </small>
 
                         </div>
 
