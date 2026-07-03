@@ -85,8 +85,8 @@
             @csrf
 
             <div class="mb-3 text-start">
-                <label for="email" class="form-label">Correo electrónico</label>
-                <input id="email" type="email" class="form-control" name="email" required autofocus>
+                <label for="email" class="form-label">CUIL</label>
+                <input id="email" type="text" class="form-control" name="email" required autofocus>
             </div>
 
             <div class="mb-3 text-start">

@@ -11,10 +11,9 @@
     <form action="{{ route('rrhh.empleados.storeUser', $empleado) }}" method="POST">
         @csrf
 
-        <div class="mb-3">
-            <label>Email institucional</label>
-            <input type="email" name="email" class="form-control" required>
-            @error('email') <span class="text-danger">{{ $message }}</span> @enderror
+        <div class="mb-3">  
+          <label>CUIL / Usuario de acceso</label>
+          <input type="text" name="email" class="form-control" value="{{ $empleado->cuil }}" required>
         </div>
 
         <div class="mb-3">

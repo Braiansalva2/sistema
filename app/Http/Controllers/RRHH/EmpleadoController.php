@@ -353,7 +353,7 @@ public function storeUser(Request $request, Empleado $empleado)
     }
 
     $data = $request->validate([
-        'email' => 'required|email|unique:users,email',
+        'email' => 'required|string|max:20|unique:users,email',
         'password' => 'required|min:6|confirmed',
         'role' => 'required|exists:roles,name',
     ]);
@@ -398,7 +398,7 @@ public function cambiarPassword(Request $request, User $user)
 
     $user->password = bcrypt($data['password']);
     $user->save();
-
+  
     return back()->with('success', 'Contraseña actualizada correctamente.');
 }
 
