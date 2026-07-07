@@ -68,6 +68,15 @@
                 </select>
             </div>
 
+
+            <div style="width: 200px;">
+                <select id="estado" class="form-select">
+                    <option value="Activo" selected>Activos</option>
+                    <option value="Inactivo">Inactivos</option>
+                    <option value="Todos">Todos</option>
+                </select>
+            </div>
+
         </div>
     </div>
 
@@ -128,6 +137,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const buscador = document.getElementById('buscador');
+    const estado = document.getElementById('estado');
     const cantidad = document.getElementById('cantidad');
     const cardsContainer = document.getElementById('cards-container');
     const paginacion = document.getElementById('paginacion-empleados');
@@ -151,9 +161,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const parametros = new URLSearchParams({
             page: pagina,
             por_pagina: cantidad.value,
-            buscar: buscador.value.trim()
+            buscar: buscador.value.trim(),
+            estado: estado.value
         });
-
+            estado.addEventListener('change', function () {
+                cargarEmpleados(1);
+            });
+            
         const respuesta = await fetch("{{ route('rrhh.empleados.json') }}?" + parametros.toString(), {
             headers: {
                 'Accept': 'application/json'

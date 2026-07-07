@@ -17,7 +17,7 @@ class CrearUsuariosEmpleados extends Command
     /**
      * Descripción.
      */
-    protected $description = 'Crea automáticamente usuarios para empleados usando CUIL como usuario y DNI como contraseña.';
+    protected $description = 'Crea automáticamente usuarios para empleados activos usando el CUIL como usuario y el DNI como contraseña.';
 
     public function handle()
     {
@@ -25,9 +25,11 @@ class CrearUsuariosEmpleados extends Command
 
         $this->info('');
         $this->info('===========================================');
-        $this->info($modoSimulacion
-            ? ' SIMULACIÓN DE CREACIÓN DE USUARIOS'
-            : ' CREACIÓN DE USUARIOS');
+        $this->info(
+            $modoSimulacion
+                ? ' SIMULACIÓN DE CREACIÓN DE USUARIOS'
+                : ' CREACIÓN DE USUARIOS'
+        );
         $this->info('===========================================');
         $this->newLine();
 
@@ -39,7 +41,8 @@ class CrearUsuariosEmpleados extends Command
         $usuarioExistente = 0;
         $errores = 0;
 
-        $empleados = Empleado::orderBy('apellido')
+        $empleados = Empleado::where('estado', 'Activo')
+            ->orderBy('apellido')
             ->orderBy('nombre')
             ->get();
 
@@ -49,7 +52,7 @@ class CrearUsuariosEmpleados extends Command
 
             $nombreCompleto = trim($empleado->nombre . ' ' . $empleado->apellido);
 
-            // Ya tiene usuario asignado
+            // Ya tiene usuario
             if (!empty($empleado->user_id)) {
 
                 $yaTienenUsuario++;
@@ -79,8 +82,11 @@ class CrearUsuariosEmpleados extends Command
                 continue;
             }
 
-            // Ya existe usuario con ese CUIL
-            if (User::where('email', $empleado->cuil)->exists()) {
+            // CUIL limpio (solo números)
+            $cuil = preg_replace('/\D/', '', $empleado->cuil);
+
+            // Ya existe un usuario con ese CUIL
+            if (User::where('email', $cuil)->exists()) {
 
                 $usuarioExistente++;
 
@@ -89,33 +95,41 @@ class CrearUsuariosEmpleados extends Command
                 continue;
             }
 
-            // SIMULACIÓN
+            // ==========================
+            // MODO SIMULACIÓN
+            // ==========================
+
             if ($modoSimulacion) {
 
                 $creados++;
 
                 $this->info("✔ {$nombreCompleto}");
-                $this->line("   Usuario: {$empleado->cuil}");
+                $this->line("   Usuario: {$cuil}");
                 $this->line("   Contraseña: {$empleado->dni}");
                 $this->newLine();
 
                 continue;
             }
 
+            // ==========================
             // CREACIÓN REAL
+            // ==========================
+
             try {
 
                 $user = User::create([
                     'name'     => $nombreCompleto,
-                    'email'    => $empleado->cuil,
+                    'email'    => $cuil,
                     'password' => Hash::make($empleado->dni),
                     'active'   => 1,
                 ]);
 
+                // Asignar rol empleado
                 $user->assignRole('empleado');
 
+                // Relacionar usuario con empleado
                 $empleado->update([
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
                 ]);
 
                 $creados++;
@@ -140,7 +154,7 @@ class CrearUsuariosEmpleados extends Command
         $this->table(
             ['Concepto', 'Cantidad'],
             [
-                ['Total empleados', $total],
+                ['Total empleados activos', $total],
                 [$modoSimulacion ? 'Se crearían' : 'Usuarios creados', $creados],
                 ['Ya tienen usuario', $yaTienenUsuario],
                 ['Sin CUIL', $sinCuil],
@@ -151,9 +165,13 @@ class CrearUsuariosEmpleados extends Command
         );
 
         if ($modoSimulacion) {
+
             $this->warn('SIMULACIÓN FINALIZADA. No se creó ningún usuario.');
+
         } else {
+
             $this->info('PROCESO FINALIZADO CORRECTAMENTE.');
+
         }
 
         return Command::SUCCESS;

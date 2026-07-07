@@ -47,6 +47,13 @@ class EmpleadoController extends Controller
 
     $buscar = trim((string) $request->input('buscar', ''));
 
+
+    $estado = $request->input('estado', 'Activo');
+
+    $estado = in_array($estado, ['Activo', 'Inactivo', 'Todos'], true)
+        ? $estado
+        : 'Activo';
+
     $empleados = Empleado::query()
         ->with([
             'banco:id,nombre_banco',
@@ -54,6 +61,9 @@ class EmpleadoController extends Controller
             'rolPuesto:id,nombre_puesto',
             'contrato:id,tipo_contrato',
         ])
+        ->when($estado !== 'Todos', function ($query) use ($estado) {
+                    $query->where('estado', $estado);
+                })
         ->when($buscar !== '', function ($query) use ($buscar) {
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', '%' . $buscar . '%')
